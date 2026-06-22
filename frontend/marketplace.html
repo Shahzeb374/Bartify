@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bartify — Marketplace</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+
+  <link rel="stylesheet" href="marketplace.css"/>
+</head>
+<body>
+
+  <!-- ══════════════════════════════
+       NAVBAR
+  ══════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid px-2">
+
+      <a class="navbar-brand" href="index.html">
+        <div class="nav-logo-icon"><i class="bi bi-stars"></i></div>
+        <span class="nav-brand-text">Bartify</span>
+      </a>
+
+      <ul class="navbar-nav gap-1 d-none d-lg-flex">
+        <li class="nav-item">
+          <a class="nav-link nav-link-active" href="marketplace.html">Marketplace</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="how-it-works.html">How it Works</a>
+        </li>
+      </ul>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <i class="bi bi-list" style="font-size:1.3rem;"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav gap-1 d-lg-none">
+          <li class="nav-item">
+            <a class="nav-link nav-link-active" href="marketplace.html">Marketplace</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="how-it-works.html">How it Works</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <a href="login.html" class="btn-login">Login</a>
+          <a href="signup.html" class="btn-get-started">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════
+       PAGE HEADER + SEARCH
+  ══════════════════════════════ -->
+  <section class="page-header">
+    <div class="container">
+      <h1>Explore the Marketplace</h1>
+      <p>Discover amazing goods and services available for barter. Sign up to start trading!</p>
+      <div class="search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" class="search-input" id="searchInput"
+          placeholder="Search listings..." oninput="filterListings()"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════
+       CATEGORY TABS
+  ══════════════════════════════ -->
+  <div class="category-section">
+    <div class="container">
+      <div class="category-tabs" id="categoryTabs">
+        <button class="cat-btn active" onclick="setCategory('All', this)">All</button>
+        <button class="cat-btn" onclick="setCategory('Electronics', this)">Electronics</button>
+        <button class="cat-btn" onclick="setCategory('Books', this)">Books</button>
+        <button class="cat-btn" onclick="setCategory('Sports', this)">Sports</button>
+        <button class="cat-btn" onclick="setCategory('Furniture', this)">Furniture</button>
+        <button class="cat-btn" onclick="setCategory('Services', this)">Services</button>
+        <button class="cat-btn" onclick="setCategory('Art & Craft', this)">Art & Craft</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       LISTINGS
+  ══════════════════════════════ -->
+  <section class="listings-section">
+    <div class="container">
+      <div class="listings-header">
+        <h2 class="listings-title">Available Listings</h2>
+        <span class="items-found" id="itemsFound">18 items found</span>
+      </div>
+
+      <div class="row g-4" id="listingsGrid"></div>
+
+      <!-- No Results -->
+      <div class="no-results" id="noResults">
+        <i class="bi bi-search"></i>
+        <h4>No listings found</h4>
+        <p>Try a different search term or category.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════
+       DETAIL MODAL
+  ══════════════════════════════ -->
+  <div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalTitle">Product Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row gx-4 gy-4">
+            <div class="col-lg-6">
+              <div class="modal-img-wrap">
+                <img id="modalImg" src="" alt="" class="modal-img"/>
+                <button class="modal-fav-btn" id="modalFavBtn" onclick="toggleFavorite(event)">
+                  <i class="bi bi-heart"></i> Add to Favorites
+                </button>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <h4 class="modal-product-title" id="modalProductTitle"></h4>
+              <p class="modal-desc" id="modalDesc"></p>
+              <div class="modal-info-row">
+                <div class="modal-info-item">
+                  <label>Category</label>
+                  <span id="modalCategory"></span>
+                </div>
+                <div class="modal-info-item">
+                  <label>Est. Value</label>
+                  <span id="modalValue"></span>
+                </div>
+                <div class="modal-info-item">
+                  <label>Listed by</label>
+                  <span id="modalUser"></span>
+                </div>
+                <div class="modal-info-item">
+                  <label>Status</label>
+                  <span id="modalVerified" style="color:#16a34a; font-weight:700;">✓ Verified</span>
+                </div>
+                <div class="modal-info-item">
+                  <label>Date Posted</label>
+                  <span id="modalDate"></span>
+                </div>
+                <div class="modal-info-item">
+                  <label>Location</label>
+                  <span id="modalLocation"></span>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button class="btn-favorite" id="favoriteBtn" onclick="toggleFavorite(event)">
+                  <i class="bi bi-heart"></i> Add to Favorites
+                </button>
+                <button class="btn-message" id="messageBtn" onclick="messageSeller()">
+                  <i class="bi bi-chat"></i> Message Seller
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal-close" data-bs-dismiss="modal">Close</button>
+          <button class="btn-modal-trade" onclick="handleTrade()">
+            <i class="bi bi-arrow-left-right me-2"></i>Make an Offer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="marketplace.js"></script>
+</body>
+</html>

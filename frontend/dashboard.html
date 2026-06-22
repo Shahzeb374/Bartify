@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bartify – Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- ════ SIDEBAR ════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">⇄</div>
+    <span class="sidebar-logo-text">Bartify</span>
+  </div>
+  <div class="sidebar-profile">
+    <div class="profile-avatar" id="sidebarAvatar"></div>
+    <div class="profile-info">
+      <div class="pname" id="sidebarName">Loading…</div>
+      <div class="pemail" id="sidebarEmail"></div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+
+    <!-- Dashboard home -->
+    <a class="nav-direct active" data-section="dashHome" onclick="navClick(this)">
+      <span class="icon"><i class="fa-solid fa-gauge-high"></i></span>
+      Dashboard
+    </a>
+
+    <!-- List Item -->
+    <div class="nav-group">
+      <div class="nav-group-header open" onclick="toggleGroup(this)">
+        <span class="icon"><i class="fa-solid fa-plus-circle"></i></span>List Item
+        <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
+      </div>
+      <div class="nav-sub open">
+        <a href="#" data-section="addListing" onclick="navClick(this)">Add a Barter Listing</a>
+        <a href="#" data-section="editListing" onclick="navClick(this)">Edit / Update Listing</a>
+        <a href="#" data-section="deleteListing" onclick="navClick(this)">Delete Listing</a>
+      </div>
+    </div>
+
+    <!-- My Listings -->
+    <div class="nav-group">
+      <div class="nav-group-header open" onclick="toggleGroup(this)">
+        <span class="icon"><i class="fa-solid fa-boxes-stacked"></i></span>My Listings
+        <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
+      </div>
+      <div class="nav-sub open">
+        <a href="#" data-section="activeListings" onclick="navClick(this)">Active Listings</a>
+        <a href="#" data-section="pendingListings" onclick="navClick(this)">Pending Listings</a>
+      </div>
+    </div>
+
+    <!-- Barter Requests -->
+    <div class="nav-group">
+      <div class="nav-group-header open" onclick="toggleGroup(this)">
+        <span class="icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>Barter Requests
+        <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
+      </div>
+      <div class="nav-sub open">
+        <a href="#" data-section="requestsReceived" onclick="navClick(this)">Barter Requests Received</a>
+        <a href="#" data-section="completedRequests" onclick="navClick(this)">Completed Barter Requests</a>
+        <a href="#" data-section="cancelledRequests" onclick="navClick(this)">Cancelled Barter Requests</a>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+<div id="sidebar-overlay" onclick="closeSidebarMobile()"></div>
+
+<!-- ════ HEADER ════ -->
+<header id="header">
+  <button class="header-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+  <div class="header-title" id="headerTitle">Dashboard</div>
+  <div class="header-actions">
+    <a href="index.html" class="btn-home"><i class="fa-solid fa-house"></i> Home</a>
+    <button class="btn-msg" onclick="openMessages()"><i class="fa-solid fa-comment-dots"></i> Messages</button>
+    <div class="profile-dropdown dropdown">
+      <button class="profile-btn dropdown-toggle" id="headerProfileBtn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fa-solid fa-user"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <div style="padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+            <div style="font-weight:700;font-size:13px;" id="dropdownName">—</div>
+            <div style="font-size:12px;color:var(--text-muted);" id="dropdownEmail">—</div>
+          </div>
+        </li>
+        <li><a class="dropdown-item" href="#" onclick="navigate('viewProfile')"><i class="fa-regular fa-user fa-fw"></i> Profile</a></li>
+        <li><a class="dropdown-item" href="#" onclick="navigate('editProfile')"><i class="fa-regular fa-pen-to-square fa-fw"></i> Update Profile</a></li>
+        <li><a class="dropdown-item" href="#" onclick="navigate('changePassword')"><i class="fa-solid fa-lock fa-fw"></i> Change Password</a></li>
+        <li><hr class="dropdown-divider my-1"></li>
+        <li><a class="dropdown-item text-danger" href="#" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket fa-fw"></i> Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- ════ MAIN ════ -->
+<main id="main">
+
+  <!-- ══ DASHBOARD HOME ══ -->
+  <section id="sec-dashHome" class="section active">
+    <div class="dash-welcome">
+      <h2 id="dashGreet">Welcome back!</h2>
+      <p>Here's an overview of your Bartify activity.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card" onclick="navigate('activeListings')">
+        <div class="stat-icon blue"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <div>
+          <div class="stat-count" id="statActive">0</div>
+          <div class="stat-label">Active Listings</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('pendingListings')">
+        <div class="stat-icon amber"><i class="fa-regular fa-clock"></i></div>
+        <div>
+          <div class="stat-count" id="statPending">0</div>
+          <div class="stat-label">Pending Listings</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('completedRequests')">
+        <div class="stat-icon green"><i class="fa-solid fa-handshake"></i></div>
+        <div>
+          <div class="stat-count" id="statCompleted">0</div>
+          <div class="stat-label">Completed Barters</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('requestsReceived')">
+        <div class="stat-icon purple"><i class="fa-solid fa-bell"></i></div>
+        <div>
+          <div class="stat-count" id="statRequests">0</div>
+          <div class="stat-label">New Requests</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two columns: Recent Listings + Activity -->
+    <div class="dash-cols">
+      <!-- Recent Listings -->
+      <div class="dash-panel">
+        <div class="dash-panel-head">
+          <h3><i class="fa-solid fa-list" style="color:var(--primary);margin-right:8px;font-size:13px;"></i>My Recent Listings</h3>
+          <a class="dash-panel-link" onclick="navigate('activeListings')">View all →</a>
+        </div>
+        <div class="dash-panel-body" id="dashRecentListings"></div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="dash-panel">
+        <div class="dash-panel-head">
+          <h3><i class="fa-solid fa-bolt" style="color:var(--warning);margin-right:8px;font-size:13px;"></i>Recent Activity</h3>
+        </div>
+        <div class="dash-panel-body" id="dashActivity"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ADD LISTING ══ -->
+  <section id="sec-addListing" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Add a Barter Listing</div>
+        <div class="page-subtitle">List a new item for barter with other users.</div>
+      </div>
+    </div>
+    <div class="add-listing-card">
+      <div class="illustration"><i class="fa-solid fa-box-open"></i></div>
+      <div>
+        <h4>Ready to list a new item?</h4>
+        <p>Click the button to open the listing form. Fill in your item details, upload photos, and publish — it only takes a minute.</p>
+        <div style="margin-top:20px;">
+          <a href="list-item.html" class="btn-primary-sm" style="font-size:14px;padding:10px 24px;">
+            <i class="fa-solid fa-plus"></i> Create New Listing
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ EDIT LISTING ══ -->
+  <section id="sec-editListing" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Edit / Update Listing</div>
+        <div class="page-subtitle">Click Edit on any listing to update it.</div>
+      </div>
+    </div>
+    <div id="editListingList"></div>
+  </section>
+
+  <!-- ══ DELETE LISTING ══ -->
+  <section id="sec-deleteListing" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Delete Listing</div>
+        <div class="page-subtitle">Permanently remove a listing from your account.</div>
+      </div>
+    </div>
+    <div id="deleteListingList"></div>
+  </section>
+
+  <!-- ══ ACTIVE LISTINGS ══ -->
+  <section id="sec-activeListings" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Active Listings</div>
+        <div class="page-subtitle">All your currently live barter listings.</div>
+      </div>
+      <span class="count-badge" id="activeCount">0 Active</span>
+    </div>
+    <div id="activeListingsList"></div>
+  </section>
+
+  <!-- ══ PENDING LISTINGS ══ -->
+  <section id="sec-pendingListings" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Pending Listings</div>
+        <div class="page-subtitle">Listings awaiting approval or action.</div>
+      </div>
+      <span class="count-badge" id="pendingCount">0 Pending</span>
+    </div>
+    <div id="pendingListingsList"></div>
+  </section>
+
+  <!-- ══ REQUESTS RECEIVED ══ -->
+  <section id="sec-requestsReceived" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Barter Requests Received</div>
+        <div class="page-subtitle">Requests from other users who want to barter with you.</div>
+      </div>
+      <span class="count-badge" id="receivedCount">0 Requests</span>
+    </div>
+    <div id="requestsReceivedList"></div>
+  </section>
+
+  <!-- ══ COMPLETED REQUESTS ══ -->
+  <section id="sec-completedRequests" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Completed Barter Requests</div>
+        <div class="page-subtitle">Successfully completed exchanges.</div>
+      </div>
+    </div>
+    <div id="completedRequestsList"></div>
+  </section>
+
+  <!-- ══ CANCELLED REQUESTS ══ -->
+  <section id="sec-cancelledRequests" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Cancelled Barter Requests</div>
+        <div class="page-subtitle">Declined or cancelled exchanges.</div>
+      </div>
+    </div>
+    <div id="cancelledRequestsList"></div>
+  </section>
+
+  <!-- ══ VIEW PROFILE ══ -->
+  <section id="sec-viewProfile" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">My Profile</div>
+        <div class="page-subtitle">Your personal information and account details.</div>
+      </div>
+      <button class="btn-primary-sm" onclick="navigate('editProfile')"><i class="fa-solid fa-pen"></i> Edit Profile</button>
+    </div>
+    <div class="form-card" style="max-width:580px;">
+      <div class="profile-avatar-upload">
+        <div class="avatar-preview" id="profileViewAvatar"></div>
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:18px;" id="profileViewName">—</div>
+          <div style="font-size:13px;color:var(--text-muted);" id="profileViewEmail">—</div>
+        </div>
+      </div>
+      <hr class="divider" style="margin-top:0;">
+      <div class="row g-3">
+        <div class="col-6"><div class="form-label">First Name</div><div style="font-weight:600;font-size:14px;" id="profileViewFirst">—</div></div>
+        <div class="col-6"><div class="form-label">Last Name</div><div style="font-weight:600;font-size:14px;" id="profileViewLast">—</div></div>
+        <div class="col-12"><div class="form-label">Phone</div><div style="font-weight:600;font-size:14px;" id="profileViewPhone">—</div></div>
+        <div class="col-12"><div class="form-label">City</div><div style="font-weight:600;font-size:14px;" id="profileViewCity">—</div></div>
+        <div class="col-12" id="profileBioWrap" style="display:none;">
+          <div class="form-label">Bio</div>
+          <div style="font-size:14px;color:var(--text-muted);" id="profileViewBio"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ EDIT PROFILE ══ -->
+  <section id="sec-editProfile" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Edit Profile</div>
+        <div class="page-subtitle">Update your personal information. Changes reflect everywhere.</div>
+      </div>
+    </div>
+    <div class="form-card">
+      <form id="editProfileForm" onsubmit="saveProfile(event)" novalidate>
+        <div class="profile-avatar-upload">
+          <div class="avatar-preview" id="editAvatarPreview"></div>
+          <div>
+            <button type="button" class="btn-outline-sm" onclick="document.getElementById('avatarUpload').click()">
+              <i class="fa-solid fa-camera"></i> Change Photo
+            </button>
+            <input type="file" id="avatarUpload" accept="image/*" hidden onchange="handleAvatarChange(event)">
+            <p style="font-size:12px;color:var(--text-muted);margin-top:6px;margin-bottom:0;">JPG or PNG, max 2MB</p>
+          </div>
+        </div>
+        <hr class="divider" style="margin-top:0;">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <label class="form-label">First Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="epFirstName" placeholder="First name" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Last Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="epLastName" placeholder="Last name" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Email Address</label>
+            <div style="position:relative;">
+              <input type="email" class="form-control" id="epEmail" disabled readonly style="padding-right:44px;">
+              <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-light);font-size:13px;"><i class="fa-solid fa-lock"></i></span>
+            </div>
+            <p style="font-size:12px;color:var(--text-light);margin-top:5px;margin-bottom:0;">Email address cannot be changed.</p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="epPhone" placeholder="+92 300 0000000">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">City</label>
+            <input type="text" class="form-control" id="epCity" placeholder="e.g. Karachi">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Bio <span style="color:var(--text-light);font-weight:400;">(optional)</span></label>
+            <textarea class="form-control" id="epBio" rows="3" placeholder="Tell others a little about yourself…"></textarea>
+          </div>
+          <div class="col-12 d-flex gap-3 flex-wrap">
+            <button type="submit" class="btn-primary-sm"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            <button type="button" class="btn-outline-sm" onclick="navigate('viewProfile')">Cancel</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ══ CHANGE PASSWORD ══ -->
+  <section id="sec-changePassword" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Change Password</div>
+        <div class="page-subtitle">Keep your account secure with a strong password.</div>
+      </div>
+    </div>
+    <div class="form-card" style="max-width:480px;">
+      <form onsubmit="changePassword(event)" novalidate>
+        <div class="row g-4">
+          <div class="col-12">
+            <label class="form-label">Current Password <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" id="cpCurrent" placeholder="••••••••" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label">New Password <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" id="cpNew" placeholder="Min. 8 characters" required minlength="8">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" id="cpConfirm" placeholder="••••••••" required minlength="8">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn-primary-sm"><i class="fa-solid fa-shield-halved"></i> Update Password</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<!-- ════ MESSAGE WIDGET ════ -->
+<div class="msg-overlay" id="msgOverlay" onclick="msgOverlayClick(event)">
+  <div class="msg-box" id="msgBox">
+    <!-- Contacts list -->
+    <div id="msgContactsPanel">
+      <div class="msg-head">
+        <span class="msg-head-title"><i class="fa-solid fa-comment-dots"></i> Messages</span>
+        <button class="msg-head-close" onclick="closeMessages()"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div class="msg-contacts" id="msgContactsList"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);">
+        <input type="text" class="msg-input" placeholder="Search users…" oninput="filterContacts(this.value)" style="width:100%">
+      </div>
+    </div>
+    <!-- Chat panel -->
+    <div class="msg-chat" id="msgChatPanel">
+      <div class="msg-chat-head">
+        <button class="msg-back" onclick="showContactsList()"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="msg-contact-av" id="chatPartnerAv" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#3b82f6);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">U</div>
+        <div class="msg-chat-name" id="chatPartnerName">User</div>
+      </div>
+      <div class="msg-messages" id="chatMessages"></div>
+      <div class="msg-input-row">
+        <input type="text" class="msg-input" id="chatInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="msg-send" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- DELETE MODAL -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Delete Listing</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-4">
+        <p style="font-size:14px;color:var(--text-muted);margin:0;">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-view-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-delete-sm" id="confirmDeleteBtn"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div class="modal fade" id="logoutModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Logout</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-4">
+        <p style="font-size:14px;color:var(--text-muted);margin:0;">Are you sure you want to log out of Bartify?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-view-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-delete-sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

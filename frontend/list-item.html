@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bartify – List an Item</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="list-item.css"/>
+</head>
+<body>
+
+<!-- ════ SIDEBAR (same as Dashboard) ════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">⇄</div>
+    <span class="sidebar-logo-text">Bartify</span>
+  </div>
+  <div class="sidebar-profile">
+    <div class="profile-avatar" id="sidebarAvatar"></div>
+    <div class="profile-info">
+      <div class="pname" id="sidebarName">Loading…</div>
+      <div class="pemail" id="sidebarEmail"></div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+
+    <!-- Dashboard home -->
+    <a class="nav-direct" href="dashboard.html">
+      <span class="icon"><i class="fa-solid fa-gauge-high"></i></span>
+      Dashboard
+    </a>
+
+    <!-- List Item — active since we're on this page -->
+    <div class="nav-group">
+      <div class="nav-group-header open" onclick="toggleGroup(this)">
+        <span class="icon"><i class="fa-solid fa-plus-circle"></i></span>List Item
+        <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
+      </div>
+      <div class="nav-sub open">
+        <a href="#" class="active" onclick="scrollToTop()">Add a Barter Listing</a>
+        <a href="dashboard.html?section=editListing">Edit / Update Listing</a>
+        <a href="dashboard.html?section=deleteListing">Delete Listing</a>
+      </div>
+    </div>
+
+    <!-- My Listings -->
+    <div class="nav-group">
+      <div class="nav-group-header open" onclick="toggleGroup(this)">
+        <span class="icon"><i class="fa-solid fa-boxes-stacked"></i></span>My Listings
+        <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
+      </div>
+      <div class="nav-sub open">
+        <a href="dashboard.html?section=activeListings">Active Listings</a>
+        <a href="dashboard.html?section=pendingListings">Pending Listings</a>
+      </div>
+    </div>
+
+    <!-- Barter Requests -->
+    <div class="nav-group">
+      <div class="nav-group-header open" onclick="toggleGroup(this)">
+        <span class="icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>Barter Requests
+        <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
+      </div>
+      <div class="nav-sub open">
+        <a href="dashboard.html?section=requestsReceived">Barter Requests Received</a>
+        <a href="dashboard.html?section=completedRequests">Completed Barter Requests</a>
+        <a href="dashboard.html?section=cancelledRequests">Cancelled Barter Requests</a>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+<div id="sidebar-overlay" onclick="closeSidebarMobile()"></div>
+
+<!-- ════ HEADER ════ -->
+<header id="header">
+  <button class="header-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+  <div class="header-title" id="headerTitle">Add a Barter Listing</div>
+  <div class="header-actions">
+    <a href="index.html" class="btn-home"><i class="fa-solid fa-house"></i> Home</a>
+    <div class="profile-btn" id="headerProfileBtn">
+      <i class="fa-solid fa-user"></i>
+    </div>
+  </div>
+</header>
+
+<!-- ════ MAIN CONTENT ════ -->
+<main id="main">
+
+  <div class="page-header-wrap">
+    <!-- Back goes to Dashboard → Add a Barter Listing section -->
+    <button class="page-back" onclick="goBack()">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </button>
+    <div class="page-title" id="formTitle">List an Item</div>
+    <div class="page-subtitle">Share details about what you'd like to exchange.</div>
+  </div>
+
+  <form id="listItemForm" onsubmit="publishListing(event)" novalidate>
+
+    <!-- ── PRODUCT IMAGES ── -->
+    <div class="form-section">
+      <div class="form-section-title">
+        <i class="fa-regular fa-image"></i> Product Images
+      </div>
+      <div class="upload-grid" id="uploadGrid">
+        <!-- Upload slots rendered by JS -->
+      </div>
+      <p class="upload-note">Upload up to 4 images. First image will be the cover photo.</p>
+    </div>
+
+    <!-- ── PRODUCT DETAILS ── -->
+    <div class="form-section">
+      <div class="form-section-title">
+        <i class="fa-solid fa-tag"></i> Product Details
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <label class="form-label">Product Title <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="itemTitle" placeholder="e.g. Vintage Leather Armchair" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="itemDesc" rows="4" placeholder="Describe the item's condition, features, and why you're trading it…"></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Category <span class="text-danger">*</span></label>
+          <select class="form-select" id="itemCat" required>
+            <option value="">Select category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Furniture">Furniture</option>
+            <option value="Sports">Sports</option>
+            <option value="Services">Services</option>
+            <option value="Music">Music</option>
+            <option value="Books">Books</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Condition</label>
+          <select class="form-select" id="itemCond">
+            <option value="">Select condition</option>
+            <option value="10">10/10</option>
+            <option value="9">9/10</option>
+            <option value="8">8/10</option>
+            <option value="7">7/10</option>
+            <option value="6">6/10</option>
+            <option value="5">5/10</option>
+            <option value="4">4/10</option>
+            <option value="3">3/10</option>
+            <option value="2">2/10</option>
+            <option value="1">1/10</option>
+          </select>
+        </div>
+
+        <!-- Estimated Value RANGE — single combined input -->
+        <div class="col-12">
+          <label class="form-label">Estimated Value (PKR)</label>
+          <div class="value-single-wrap">
+            <span class="value-tag">From</span>
+            <input type="number" class="value-inner-input" id="valueFrom"
+                   placeholder="500" min="0" oninput="syncValueTo()">
+            <span class="value-dash">—</span>
+            <span class="value-tag">To</span>
+            <input type="number" class="value-inner-input" id="valueTo"
+                   placeholder="1000" min="0">
+            <span class="value-currency">PKR</span>
+          </div>
+          <p class="form-hint">Enter a value range, e.g. 500 — 1000</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WHAT ARE YOU LOOKING FOR ── -->
+    <div class="form-section">
+      <div class="form-section-title">
+        <i class="fa-solid fa-arrows-left-right"></i> What are you looking for?
+      </div>
+      <label class="form-label">Preferred Trade</label>
+      <textarea class="form-control" id="itemTrade" rows="3" placeholder="Describe what you'd ideally like to receive in exchange…"></textarea>
+      <p class="form-hint">Optional but helpful for attracting relevant offers.</p>
+    </div>
+
+    <!-- ── ACTIONS ── -->
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" onclick="goBack()">Cancel</button>
+      <button type="submit" class="btn-publish" id="publishBtn">
+        <i class="fa-solid fa-paper-plane"></i>
+        <span id="publishBtnText">Publish Listing</span>
+      </button>
+    </div>
+
+  </form>
+</main>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="list-item.js">
+
+</script>
+</body>
+</html>
