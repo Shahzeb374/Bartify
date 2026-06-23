@@ -4,6 +4,7 @@ from app.database import engine
 from app import models
 from app.routes import users, posts
 from fastapi.staticfiles import StaticFiles
+import os
 
 
 app = FastAPI()
@@ -26,6 +27,7 @@ app.add_middleware(
 models.Base.metadata.create_all(bind=engine)
 
 # Static files for profile images
+os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Routers

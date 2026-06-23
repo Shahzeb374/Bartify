@@ -23,6 +23,13 @@ const API_BASE_URL = 'http://127.0.0.1:8000';
 // to '/users/login' kar do.
 const LOGIN_PATH = '/users/login';
 
+function resolveProfileImageUrl(src) {
+  if (!src) return null;
+  if (/^data:|^https?:\/\//i.test(src)) return src;
+  if (src.startsWith('/uploads/')) return `${API_BASE_URL}${src}`;
+  return src;
+}
+
 // ── Validate & Login ──────────────────────────────────────
 async function validateLogin() {
   clearError('email', 'emailError');
@@ -69,7 +76,10 @@ async function validateLogin() {
     if (!data.access_token) throw new Error('Login failed. Please try again.');
     localStorage.setItem('barterToken', data.access_token);
     const user = data.user || { email, name: email.split('@')[0], picture: null, avatar: null };
-    if (!user.avatar && user.picture) user.avatar = user.picture;
+    const avatar = resolveProfileImageUrl(user.avatar || user.picture || user.user_image || null);
+    user.avatar = avatar;
+    user.picture = resolveProfileImageUrl(user.picture || avatar);
+    user.user_image = resolveProfileImageUrl(user.user_image || avatar);
     localStorage.setItem('barterUser', JSON.stringify(user));
     localStorage.setItem('bartifyUser', JSON.stringify(user));
 

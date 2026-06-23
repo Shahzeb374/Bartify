@@ -11,7 +11,7 @@
 </head>
 <body>
 
-<!-- ══════════ NAVBAR ══════════ -->
+<!-- ═══ NAVBAR ═══ -->
 <nav class="navbar" style="position:relative;">
   <div class="container">
     <a class="navbar-brand" href="index.html">
@@ -38,13 +38,15 @@
       <!-- Logged IN -->
       <div class="d-flex align-items-center gap-2" id="navLoggedIn" style="display:none!important;">
         <a href="#" class="nav-icon-btn" title="Favorites"><i class="bi bi-heart"></i></a>
-        <a href="list-item.html" class="btn-list-item">List Item</a>
-        <div id="" class="nav-avatar-wrap" onclick="toggleDropdown()">
+        <a href="dashboard.html?section=addListing" class="btn-list-item">List Item</a>
+        <div class="nav-avatar-wrap" onclick="toggleDropdown()">
           <img id="navProfilePic" src="" alt="Profile" class="nav-avatar-img" style="display:none"/>
           <div id="navAvatar" class="nav-avatar-text"></div>
           <div class="nav-dropdown" id="navDropdown">
             <div class="dropdown-user-info">
-              <div class="dropdown-user-icon"><i class="bi bi-person-fill"></i></div>
+              <div class="dropdown-user-icon" id="dropdownAvatar">
+                <i class="bi bi-person-fill"></i>
+              </div>
               <div>
                 <div class="d-uname" id="dropdownName">User</div>
                 <div class="d-uemail" id="dropdownEmail">email@example.com</div>
@@ -67,7 +69,7 @@
   </div>
 </nav>
 
-<!-- ══════════ HERO ══════════ -->
+<!-- ═══ HERO ═══ -->
 <section class="hero">
   <div class="container">
     <h1 class="hero-title">Trade What You Have for<br/>What You Need</h1>
@@ -76,7 +78,7 @@
   </div>
 </section>
 
-<!-- ══════════ CATEGORIES ══════════ -->
+<!-- ═══ CATEGORIES ═══ -->
 <section class="categories">
   <div class="container">
     <div class="cat-filters">
@@ -84,14 +86,14 @@
       <button class="cat-btn"        data-cat="Electronics" onclick="filterCat(this)">Electronics</button>
       <button class="cat-btn"        data-cat="Furniture"   onclick="filterCat(this)">Furniture</button>
       <button class="cat-btn"        data-cat="Sports"      onclick="filterCat(this)">Sports</button>
-      <button class="cat-btn"        data-cat="Home"        onclick="filterCat(this)">Home</button>
+      <button class="cat-btn"        data-cat="Services"    onclick="filterCat(this)">Services</button>
       <button class="cat-btn"        data-cat="Music"       onclick="filterCat(this)">Music</button>
       <button class="cat-btn"        data-cat="Books"       onclick="filterCat(this)">Books</button>
     </div>
   </div>
 </section>
 
-<!-- ══════════ PRODUCTS ══════════ -->
+<!-- ═══ PRODUCTS ═══ -->
 <section class="products-section">
   <div class="container">
     <div class="products-header">
@@ -104,7 +106,7 @@
   </div>
 </section>
 
-<!-- ══════════ PRODUCT DETAIL MODAL ══════════ -->
+<!-- ═══ PRODUCT DETAIL MODAL ═══ -->
 <div class="pd-overlay" id="pdOverlay" onclick="overlayClick(event)">
   <div class="pd-modal" id="pdModal">
     <button class="pd-close" onclick="closeDetail()"><i class="bi bi-x-lg"></i></button>
@@ -115,11 +117,10 @@
   </div>
 </div>
 
-<!-- ══════════ TOAST ══════════ -->
+<!-- ═══ TOAST ═══ -->
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="script.js">
-</script>
+<script src="script.js"></script>
 </body>
 </html>

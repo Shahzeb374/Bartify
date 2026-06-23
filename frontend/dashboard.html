@@ -7,7 +7,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="dashboard.css"/>
 </head>
 <body>
 
@@ -39,8 +39,8 @@
         <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       <div class="nav-sub open">
-        <a href="#" data-section="addListing" onclick="navClick(this)">Add a Barter Listing</a>
-        <a href="#" data-section="editListing" onclick="navClick(this)">Edit / Update Listing</a>
+        <a href="#" data-section="addListing"    onclick="navClick(this)">Add a Barter Listing</a>
+        <a href="#" data-section="editListing"   onclick="navClick(this)">Edit / Update Listing</a>
         <a href="#" data-section="deleteListing" onclick="navClick(this)">Delete Listing</a>
       </div>
     </div>
@@ -52,7 +52,7 @@
         <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       <div class="nav-sub open">
-        <a href="#" data-section="activeListings" onclick="navClick(this)">Active Listings</a>
+        <a href="#" data-section="activeListings"  onclick="navClick(this)">Active Listings</a>
         <a href="#" data-section="pendingListings" onclick="navClick(this)">Pending Listings</a>
       </div>
     </div>
@@ -64,7 +64,7 @@
         <span class="arrow"><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       <div class="nav-sub open">
-        <a href="#" data-section="requestsReceived" onclick="navClick(this)">Barter Requests Received</a>
+        <a href="#" data-section="requestsReceived"  onclick="navClick(this)">Barter Requests Received</a>
         <a href="#" data-section="completedRequests" onclick="navClick(this)">Completed Barter Requests</a>
         <a href="#" data-section="cancelledRequests" onclick="navClick(this)">Cancelled Barter Requests</a>
       </div>
@@ -88,7 +88,7 @@
       </button>
       <ul class="dropdown-menu dropdown-menu-end">
         <li>
-          <div style="padding:10px 14px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+          <div class="dd-user-info">
             <div style="font-weight:700;font-size:13px;" id="dropdownName">—</div>
             <div style="font-size:12px;color:var(--text-muted);" id="dropdownEmail">—</div>
           </div>
@@ -106,48 +106,31 @@
 <!-- ════ MAIN ════ -->
 <main id="main">
 
-  <!-- ══ DASHBOARD HOME ══ -->
+  <!-- ── DASHBOARD HOME ── -->
   <section id="sec-dashHome" class="section active">
     <div class="dash-welcome">
       <h2 id="dashGreet">Welcome back!</h2>
       <p>Here's an overview of your Bartify activity.</p>
     </div>
-
-    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card" onclick="navigate('activeListings')">
         <div class="stat-icon blue"><i class="fa-solid fa-boxes-stacked"></i></div>
-        <div>
-          <div class="stat-count" id="statActive">0</div>
-          <div class="stat-label">Active Listings</div>
-        </div>
+        <div><div class="stat-count" id="statActive">0</div><div class="stat-label">Active Listings</div></div>
       </div>
       <div class="stat-card" onclick="navigate('pendingListings')">
         <div class="stat-icon amber"><i class="fa-regular fa-clock"></i></div>
-        <div>
-          <div class="stat-count" id="statPending">0</div>
-          <div class="stat-label">Pending Listings</div>
-        </div>
+        <div><div class="stat-count" id="statPending">0</div><div class="stat-label">Pending Listings</div></div>
       </div>
       <div class="stat-card" onclick="navigate('completedRequests')">
         <div class="stat-icon green"><i class="fa-solid fa-handshake"></i></div>
-        <div>
-          <div class="stat-count" id="statCompleted">0</div>
-          <div class="stat-label">Completed Barters</div>
-        </div>
+        <div><div class="stat-count" id="statCompleted">0</div><div class="stat-label">Completed Barters</div></div>
       </div>
       <div class="stat-card" onclick="navigate('requestsReceived')">
         <div class="stat-icon purple"><i class="fa-solid fa-bell"></i></div>
-        <div>
-          <div class="stat-count" id="statRequests">0</div>
-          <div class="stat-label">New Requests</div>
-        </div>
+        <div><div class="stat-count" id="statRequests">0</div><div class="stat-label">New Requests</div></div>
       </div>
     </div>
-
-    <!-- Two columns: Recent Listings + Activity -->
     <div class="dash-cols">
-      <!-- Recent Listings -->
       <div class="dash-panel">
         <div class="dash-panel-head">
           <h3><i class="fa-solid fa-list" style="color:var(--primary);margin-right:8px;font-size:13px;"></i>My Recent Listings</h3>
@@ -155,8 +138,6 @@
         </div>
         <div class="dash-panel-body" id="dashRecentListings"></div>
       </div>
-
-      <!-- Recent Activity -->
       <div class="dash-panel">
         <div class="dash-panel-head">
           <h3><i class="fa-solid fa-bolt" style="color:var(--warning);margin-right:8px;font-size:13px;"></i>Recent Activity</h3>
@@ -166,29 +147,112 @@
     </div>
   </section>
 
-  <!-- ══ ADD LISTING ══ -->
+  <!-- ── ADD LISTING ── -->
   <section id="sec-addListing" class="section">
     <div class="page-header">
       <div>
-        <div class="page-title">Add a Barter Listing</div>
-        <div class="page-subtitle">List a new item for barter with other users.</div>
+        <div class="page-title" id="addListingTitle">Add a Barter Listing</div>
+        <div class="page-subtitle" id="addListingSubtitle">Share details about what you'd like to exchange.</div>
       </div>
     </div>
-    <div class="add-listing-card">
-      <div class="illustration"><i class="fa-solid fa-box-open"></i></div>
-      <div>
-        <h4>Ready to list a new item?</h4>
-        <p>Click the button to open the listing form. Fill in your item details, upload photos, and publish — it only takes a minute.</p>
-        <div style="margin-top:20px;">
-          <a href="list-item.html" class="btn-primary-sm" style="font-size:14px;padding:10px 24px;">
-            <i class="fa-solid fa-plus"></i> Create New Listing
-          </a>
+
+    <form id="listItemForm" onsubmit="publishListing(event)" novalidate>
+
+      <!-- ── PRODUCT IMAGES ── -->
+      <div class="ali-section">
+        <div class="ali-section-title">
+          <i class="fa-regular fa-image"></i> Product Images
+        </div>
+        <div class="upload-grid" id="uploadGrid"></div>
+        <p class="upload-note">Upload up to 4 images. First image will be the cover photo.</p>
+      </div>
+
+      <!-- ── PRODUCT DETAILS ── -->
+      <div class="ali-section">
+        <div class="ali-section-title">
+          <i class="fa-solid fa-tag"></i> Product Details
+        </div>
+        <div class="row g-4">
+          <div class="col-12">
+            <label class="ali-label">Product Title <span class="text-danger">*</span></label>
+            <input type="text" class="ali-input" id="itemTitle" placeholder="e.g. Vintage Leather Armchair" required>
+          </div>
+          <div class="col-12">
+            <label class="ali-label">Description</label>
+            <textarea class="ali-input" id="itemDesc" rows="4" placeholder="Describe the item's condition, features, and why you're trading it…"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="ali-label">Category <span class="text-danger">*</span></label>
+            <select class="ali-input" id="itemCat" required>
+              <option value="">Select category</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Sports">Sports</option>
+              <option value="Services">Services</option>
+              <option value="Music">Music</option>
+              <option value="Books">Books</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="ali-label">Condition</label>
+            <select class="ali-input" id="itemCond">
+              <option value="">Select condition</option>
+              <option value="10">10/10</option>
+              <option value="9">9/10</option>
+              <option value="8">8/10</option>
+              <option value="7">7/10</option>
+              <option value="6">6/10</option>
+              <option value="5">5/10</option>
+              <option value="4">4/10</option>
+              <option value="3">3/10</option>
+              <option value="2">2/10</option>
+              <option value="1">1/10</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="ali-label">Estimated Value (PKR)</label>
+            <div class="value-single-wrap">
+              <span class="value-tag">From</span>
+              <input type="number" class="value-inner-input" id="valueFrom" placeholder="500" min="0" oninput="syncValueTo()">
+              <span class="value-dash">—</span>
+              <span class="value-tag">To</span>
+              <input type="number" class="value-inner-input" id="valueTo" placeholder="1000" min="0">
+              <span class="value-currency">PKR</span>
+            </div>
+            <p class="ali-hint">Enter a value range, e.g. 500 — 1000</p>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- ── WHAT ARE YOU LOOKING FOR ── -->
+      <div class="ali-section">
+        <div class="ali-section-title">
+          <i class="fa-solid fa-arrows-left-right"></i> What are you looking for?
+        </div>
+        <label class="ali-label">Preferred Trade</label>
+        <textarea class="ali-input" id="itemTrade" rows="2" maxlength="30" placeholder="e.g. Laptop, Mobile" oninput="updateTradeCounter(this)" style="resize:none;line-height:1.5;padding-top:9px;padding-bottom:9px;"></textarea>
+        <div class="trade-counter-wrap">
+          <span id="tradeCounterMsg" class="trade-limit-msg" style="display:none;">Maximum 30 characters allowed.</span>
+          <span id="tradeCounter" class="trade-counter">0/30</span>
+        </div>
+        <p class="ali-hint">Optional but helpful for attracting relevant offers.</p>
+      </div>
+
+      <!-- ── ACTIONS ── -->
+      <div class="ali-actions">
+        <button type="button" class="btn-outline-sm" onclick="cancelListingForm()">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="publishBtn">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span id="publishBtnText">Publish Listing</span>
+        </button>
+      </div>
+
+    </form>
   </section>
 
-  <!-- ══ EDIT LISTING ══ -->
+  <!-- ── EDIT LISTING ── -->
   <section id="sec-editListing" class="section">
     <div class="page-header">
       <div>
@@ -199,7 +263,7 @@
     <div id="editListingList"></div>
   </section>
 
-  <!-- ══ DELETE LISTING ══ -->
+  <!-- ── DELETE LISTING ── -->
   <section id="sec-deleteListing" class="section">
     <div class="page-header">
       <div>
@@ -210,7 +274,7 @@
     <div id="deleteListingList"></div>
   </section>
 
-  <!-- ══ ACTIVE LISTINGS ══ -->
+  <!-- ── ACTIVE LISTINGS ── -->
   <section id="sec-activeListings" class="section">
     <div class="page-header">
       <div>
@@ -222,7 +286,7 @@
     <div id="activeListingsList"></div>
   </section>
 
-  <!-- ══ PENDING LISTINGS ══ -->
+  <!-- ── PENDING LISTINGS ── -->
   <section id="sec-pendingListings" class="section">
     <div class="page-header">
       <div>
@@ -234,7 +298,7 @@
     <div id="pendingListingsList"></div>
   </section>
 
-  <!-- ══ REQUESTS RECEIVED ══ -->
+  <!-- ── REQUESTS RECEIVED ── -->
   <section id="sec-requestsReceived" class="section">
     <div class="page-header">
       <div>
@@ -246,7 +310,7 @@
     <div id="requestsReceivedList"></div>
   </section>
 
-  <!-- ══ COMPLETED REQUESTS ══ -->
+  <!-- ── COMPLETED REQUESTS ── -->
   <section id="sec-completedRequests" class="section">
     <div class="page-header">
       <div>
@@ -257,7 +321,7 @@
     <div id="completedRequestsList"></div>
   </section>
 
-  <!-- ══ CANCELLED REQUESTS ══ -->
+  <!-- ── CANCELLED REQUESTS ── -->
   <section id="sec-cancelledRequests" class="section">
     <div class="page-header">
       <div>
@@ -268,7 +332,7 @@
     <div id="cancelledRequestsList"></div>
   </section>
 
-  <!-- ══ VIEW PROFILE ══ -->
+  <!-- ── VIEW PROFILE ── -->
   <section id="sec-viewProfile" class="section">
     <div class="page-header">
       <div>
@@ -299,7 +363,7 @@
     </div>
   </section>
 
-  <!-- ══ EDIT PROFILE ══ -->
+  <!-- ── EDIT PROFILE ── -->
   <section id="sec-editProfile" class="section">
     <div class="page-header">
       <div>
@@ -358,7 +422,7 @@
     </div>
   </section>
 
-  <!-- ══ CHANGE PASSWORD ══ -->
+  <!-- ── CHANGE PASSWORD ── -->
   <section id="sec-changePassword" class="section">
     <div class="page-header">
       <div>
@@ -394,8 +458,7 @@
 <!-- ════ MESSAGE WIDGET ════ -->
 <div class="msg-overlay" id="msgOverlay" onclick="msgOverlayClick(event)">
   <div class="msg-box" id="msgBox">
-    <!-- Contacts list -->
-    <div id="msgContactsPanel">
+    <div id="msgContactsPanel" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
       <div class="msg-head">
         <span class="msg-head-title"><i class="fa-solid fa-comment-dots"></i> Messages</span>
         <button class="msg-head-close" onclick="closeMessages()"><i class="fa-solid fa-times"></i></button>
@@ -405,11 +468,10 @@
         <input type="text" class="msg-input" placeholder="Search users…" oninput="filterContacts(this.value)" style="width:100%">
       </div>
     </div>
-    <!-- Chat panel -->
     <div class="msg-chat" id="msgChatPanel">
       <div class="msg-chat-head">
         <button class="msg-back" onclick="showContactsList()"><i class="fa-solid fa-arrow-left"></i></button>
-        <div class="msg-contact-av" id="chatPartnerAv" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#3b82f6);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">U</div>
+        <div class="msg-contact-av" id="chatPartnerAv">U</div>
         <div class="msg-chat-name" id="chatPartnerName">User</div>
       </div>
       <div class="msg-messages" id="chatMessages"></div>
@@ -463,6 +525,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="dashboard.js"></script>
+<script src="dashboard.js">
+
+</script>
 </body>
 </html>

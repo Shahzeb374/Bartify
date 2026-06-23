@@ -3,6 +3,13 @@ const API_BASE_URL = 'http://127.0.0.1:8000';
 const SIGNUP_PATH = '/users/signup';
 const LOGIN_PATH = '/users/login';
 
+function resolveProfileImageUrl(src) {
+  if (!src) return null;
+  if (/^data:|^https?:\/\//i.test(src)) return src;
+  if (src.startsWith('/uploads/')) return `${API_BASE_URL}${src}`;
+  return src;
+}
+
 // ── State ─────────────────────────────────────────────────
 let profilePictureFile = null;
 
@@ -171,10 +178,13 @@ async function validateForm(event) {
     }
 
     localStorage.setItem('barterToken', signupData.access_token);
-    const user = signupData.user || {};
-    if (!user.avatar && user.picture) user.avatar = user.picture;
-    localStorage.setItem('barterUser', JSON.stringify(user));
-    localStorage.setItem('bartifyUser', JSON.stringify(user));
+  const user = signupData.user || {};
+  const avatar = resolveProfileImageUrl(user.avatar || user.picture || user.user_image || null);
+  user.avatar = avatar;
+  user.picture = resolveProfileImageUrl(user.picture || avatar);
+  user.user_image = resolveProfileImageUrl(user.user_image || avatar);
+  localStorage.setItem('barterUser', JSON.stringify(user));
+  localStorage.setItem('bartifyUser', JSON.stringify(user));
 
     window.location.replace('index.html');
   } catch (err) {
