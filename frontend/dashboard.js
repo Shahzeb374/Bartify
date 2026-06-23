@@ -1,10 +1,3 @@
-/* ══════════════════════════════════════
-   dashboard.js — Bartify Dashboard
-══════════════════════════════════════ */
-
-// ════════════════════════════════════════════════════
-// USER — reads from BOTH keys (index uses barterUser)
-// ════════════════════════════════════════════════════
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function resolveProfileImageUrl(src) {

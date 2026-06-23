@@ -372,4 +372,3 @@ document.addEventListener('DOMContentLoaded', () => {
   if (justAdded)  { localStorage.removeItem('bartifyJustAdded');  showToast('Listing published! 🎉','success'); }
   if (justEdited) { localStorage.removeItem('bartifyJustEdited'); showToast('Listing updated!','success'); }
 });
-
