@@ -1,5 +1,7 @@
 /backend/uploads
 /.vscode
 /backend/.vscode
-/backend/app\routes/__pycache__
+/backend/app/routes/__pycache__
 /backend/app/__pycache__
+/backend/app/database.py
+/backend/.env
