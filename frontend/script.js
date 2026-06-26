@@ -1,54 +1,14 @@
+/* ═══ AUTH ═══ */
+// const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'http://192.168.100.6:8000';
 
 
-/* ═══ DEMO SEED PRODUCTS ═══ */
-const DEMO_PRODUCTS = [
-  { id:'demo-1', title:'Vintage Leather Armchair', cat:'Furniture',
-    desc:'Beautiful mid-century modern leather armchair in excellent condition. Minor wear on armrests, adds character.',
-    cond:8, value:450, valueFrom:400, valueTo:500, trade:'Bookshelf or Desk Lamp',
-    date:'2026-04-08', seller:{ name:'Sarah Johnson', avatar:null },
-    images:['https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=700&q=80',
-            'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&q=80'] },
-  { id:'demo-2', title:'Canon EOS 5D Mark III Camera', cat:'Electronics',
-    desc:'Professional DSLR camera with low shutter count. Includes battery, charger, and strap. Perfect working condition.',
-    cond:9, value:1200, valueFrom:1100, valueTo:1300, trade:'Laptop or Drone',
-    date:'2026-04-10', seller:{ name:'Ali Raza', avatar:null },
-    images:['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=700&q=80'] },
-  { id:'demo-3', title:'Mountain Bike – Trek X-Caliber', cat:'Sports',
-    desc:'29" mountain bike, aluminum frame, disc brakes. Recently serviced, new tires installed.',
-    cond:8, value:650, valueFrom:600, valueTo:700, trade:'Gaming Console',
-    date:'2026-04-15', seller:{ name:'Usman Khan', avatar:null },
-    images:['https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=700&q=80'] },
-  { id:'demo-4', title:'Web Design Service', cat:'Services',
-    desc:'Professional website design service. I will design a modern, responsive website for your business or portfolio.',
-    cond:0, value:300, valueFrom:250, valueTo:400, trade:'Graphic Design or Video Editing',
-    date:'2026-04-16', seller:{ name:'Hina Malik', avatar:null },
-    images:['https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=700&q=80'] },
-  { id:'demo-5', title:'Acoustic Guitar – Yamaha F310', cat:'Music',
-    desc:'Full-size acoustic guitar. Minor pick scratches on body, plays perfectly. Includes bag.',
-    cond:7, value:200, valueFrom:180, valueTo:220, trade:'Keyboard or Ukulele',
-    date:'2026-04-17', seller:{ name:'Bilal Ahmed', avatar:null },
-    images:['https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=700&q=80'] },
-  { id:'demo-6', title:'The Art of War – Collector\'s Set', cat:'Books',
-    desc:"Collector's edition hardcover set. Excellent condition, barely read. A must for any bookshelf.",
-    cond:9, value:85, valueFrom:80, valueTo:100, trade:'Other books or board games',
-    date:'2026-04-18', seller:{ name:'Sara Ahmed', avatar:null },
-    images:['https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=700&q=80'] }
-];
-
-function seedIfEmpty() {
-  let existing = JSON.parse(localStorage.getItem('bartifyProducts') || '[]');
-  // Refresh demos if they exist but use old format (no valueFrom)
-  const hasDemos = existing.some(p => String(p.id).startsWith('demo-'));
-  const demosOutdated = existing.some(p => String(p.id).startsWith('demo-') && p.valueFrom === undefined);
-  if (!hasDemos || demosOutdated) {
-    const userProducts = existing.filter(p => !String(p.id).startsWith('demo-'));
-    localStorage.setItem('bartifyProducts', JSON.stringify([...DEMO_PRODUCTS, ...userProducts]));
-  }
-}
+/* ═══ STATE ═══ */
 
 /* ═══ STATE ═══ */
 let activeCategory = 'All';
 let currentQuery   = '';
+let cachedPosts    = [];   // API se aaye posts yahan store honge
 
 /* ═══ FILTERS ═══ */
 function filterCat(btn) {
@@ -75,36 +35,65 @@ function toggleMobileSearch() {
 }
 
 /* ═══ RENDER GRID ═══ */
-function renderProducts() {
+async function renderProducts() {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
 
-  let list = JSON.parse(localStorage.getItem('bartifyProducts') || '[]');
+  // Loading state
+  grid.innerHTML = `
+    <div class="products-empty">
+      <div class="empty-icon" style="font-size:2rem;">⏳</div>
+      <div class="empty-title">Loading listings…</div>
+    </div>`;
 
-  if (activeCategory !== 'All') {
-    list = list.filter(p => p.cat && p.cat.toLowerCase() === activeCategory.toLowerCase());
-  }
-  if (currentQuery) {
-    const q = currentQuery.toLowerCase();
-    list = list.filter(p =>
-      (p.title && p.title.toLowerCase().includes(q)) ||
-      (p.desc  && p.desc.toLowerCase().includes(q))  ||
-      (p.cat   && p.cat.toLowerCase().includes(q))
-    );
-  }
+  try {
+    // Build query params
+    const params = new URLSearchParams();
+    if (activeCategory !== 'All') params.set('category', activeCategory);
+    if (currentQuery)             params.set('search', currentQuery);
+    params.set('page_size', '50');
 
-  if (!list.length) {
+    const res = await fetch(`${API_BASE_URL}/posts/?${params.toString()}`);
+    if (!res.ok) throw new Error('Server error: ' + res.status);
+
+    const data = await res.json();
+    const list = data.posts || [];
+    cachedPosts = list;   // cache kar lo
+
+    // Fix image URLs (relative → absolute)
+    list.forEach(p => {
+      if (p.images) {
+        p.images = p.images.map(src =>
+          src && src.startsWith('/uploads/') ? `${API_BASE_URL}${src}` : src
+        );
+      }
+      if (p.seller && p.seller.avatar && p.seller.avatar.startsWith('/uploads/')) {
+        p.seller.avatar = `${API_BASE_URL}${p.seller.avatar}`;
+      }
+    });
+
+    if (!list.length) {
+      grid.innerHTML = `
+        <div class="products-empty">
+          <div class="empty-icon">📦</div>
+          <div class="empty-title">${currentQuery ? 'No results found' : 'No listings yet'}</div>
+          <div class="empty-sub">${currentQuery ? 'Try a different keyword or category.' : 'Be the first to list an item!'}</div>
+          <a href="dashboard.html?section=addListing" class="btn-list-first">List an Item</a>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(p => cardHTML(p)).join('');
+
+  } catch (err) {
+    console.error('Failed to load posts:', err);
     grid.innerHTML = `
       <div class="products-empty">
-        <div class="empty-icon">📦</div>
-        <div class="empty-title">${currentQuery ? 'No results found' : 'No listings yet'}</div>
-        <div class="empty-sub">${currentQuery ? 'Try a different keyword or category.' : 'Be the first to list an item!'}</div>
-        <a href="dashboard.html?section=addListing" class="btn-list-first">List an Item</a>
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Could not load listings</div>
+        <div class="empty-sub">Make sure the server is running. <a href="#" onclick="renderProducts();return false;">Retry</a></div>
       </div>`;
-    return;
   }
-
-  grid.innerHTML = list.map(p => cardHTML(p)).join('');
 }
 
 /* ═══ VALUE HELPER ═══ */
@@ -156,8 +145,7 @@ function cardHTML(p) {
 
 /* ═══ DETAIL MODAL ═══ */
 function openDetail(id) {
-  const list = JSON.parse(localStorage.getItem('bartifyProducts') || '[]');
-  const p    = list.find(x => x.id === id);
+  const p = cachedPosts.find(x => String(x.id) === String(id));
   if (!p) return;
 
   const condLabel = p.cond ? (p.cond + '/10') : (p.condLabel || '');
@@ -242,8 +230,6 @@ function offerExchange(id) {
   showToast('Exchange offer sent! 🎉', 'success');
 }
 
-/* ═══ AUTH ═══ */
-const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function resolveProfileImageUrl(src) {
   if (!src) return null;
@@ -363,7 +349,6 @@ function esc(str) {
 
 /* ═══ INIT ═══ */
 document.addEventListener('DOMContentLoaded', () => {
-  seedIfEmpty();
   checkLoginState();
   renderProducts();
 

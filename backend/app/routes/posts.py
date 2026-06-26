@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from sqlalchemy.orm import Session, joinedload
 from app import models
 from app.utils.dependencies import get_current_user, get_db
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import os
 import shutil
 import uuid
@@ -47,7 +47,74 @@ def _build_post_payload(post: models.Post, category_name: str, image_urls: list[
         "user_id": owner.u_id
     }
 
-# Upload posts
+
+# ═══ GET ALL POSTS ═══
+@router.get("/")
+def get_posts(
+    category: Optional[str] = Query(None, description="Filter by category name"),
+    search: Optional[str] = Query(None, description="Search in title or description"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Post).options(
+        joinedload(models.Post.user),
+        joinedload(models.Post.category),
+        joinedload(models.Post.images)
+    ).filter(models.Post.status == 1)
+
+    # Category filter
+    if category and category.lower() != "all":
+        query = query.join(models.Category).filter(
+            models.Category.category.ilike(category)
+        )
+
+    # Search filter
+    if search:
+        query = query.filter(
+            models.Post.title.ilike(f"%{search}%") |
+            models.Post.description.ilike(f"%{search}%")
+        )
+
+    total = query.count()
+
+    posts = query.order_by(models.Post.created_at.desc()) \
+                 .offset((page - 1) * page_size) \
+                 .limit(page_size) \
+                 .all()
+
+    result = []
+    for post in posts:
+        image_urls = [img.image_url for img in post.images if img.status == 1]
+        cat_name = post.category.category if post.category else "General"
+        result.append(_build_post_payload(post, cat_name, image_urls, post.user))
+
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "posts": result
+    }
+
+
+# ═══ GET SINGLE POST ═══
+@router.get("/{post_id}")
+def get_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.Post).options(
+        joinedload(models.Post.user),
+        joinedload(models.Post.category),
+        joinedload(models.Post.images)
+    ).filter(models.Post.p_id == post_id, models.Post.status == 1).first()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    image_urls = [img.image_url for img in post.images if img.status == 1]
+    cat_name = post.category.category if post.category else "General"
+    return _build_post_payload(post, cat_name, image_urls, post.user)
+
+
+# ═══ CREATE POST ═══
 @router.post("/")
 async def create_post(
     title: str = Form(...),

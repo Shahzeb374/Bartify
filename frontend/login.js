@@ -1,3 +1,7 @@
+// FastAPI URL
+// const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'http://192.168.100.6:8000';
+
 // ── Helpers ───────────────────────────────────────────────
 function showError(inputId, errorId, message) {
   document.getElementById(inputId).classList.add('is-error');
@@ -17,8 +21,7 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// FastAPI URL
-const API_BASE_URL = 'http://127.0.0.1:8000';
+
 // Agar app.include_router(users.router, prefix="/users") use ho raha hai,
 // to '/users/login' kar do.
 const LOGIN_PATH = '/users/login';

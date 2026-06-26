@@ -61,6 +61,7 @@ async def signup(
             "id": new_user.u_id,
             "name": new_user.name,
             "email": new_user.email,
+            "contact": new_user.contact,
             "picture": new_user.user_image
         }
     }
@@ -80,6 +81,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
             "id": db_user.u_id,
             "name": db_user.name,
             "email": db_user.email,
+            "contact": db_user.contact,
             "picture": db_user.user_image
         }
     }
