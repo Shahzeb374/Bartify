@@ -42,14 +42,33 @@ function getOrInitUser() {
 }
 
 // ════════════════════════════════════════════════════
-// PRODUCTS — uses bartifyProducts (shared with index)
+// PRODUCTS — API se aate hain, memory mein cache hote hain
 // ════════════════════════════════════════════════════
-function getProducts() {
-  try { return JSON.parse(localStorage.getItem('bartifyProducts') || '[]'); }
-  catch(e) { return []; }
-}
-function saveProducts(list) {
-  localStorage.setItem('bartifyProducts', JSON.stringify(list));
+let myPosts = [];
+
+async function loadMyPosts() {
+  const token = localStorage.getItem('barterToken');
+  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/posts/my`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    myPosts = (data.posts || []).map(p => {
+      if (p.images) {
+        p.images = p.images.map(src =>
+          src && src.startsWith('/uploads/') ? `${API_BASE_URL}${src}` : src
+        );
+      }
+      if (p.seller?.avatar?.startsWith('/uploads/')) {
+        p.seller.avatar = `${API_BASE_URL}${p.seller.avatar}`;
+      }
+      return p;
+    });
+  } catch(e) {
+    console.error('Could not load my posts:', e);
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -264,9 +283,8 @@ function esc(str) {
 // DASHBOARD HOME
 // ════════════════════════════════════════════════════
 function renderDashHome() {
-  const products = getProducts();
-  const myActive  = products.filter(p => normStatus(p) === 'active');
-  const myPending = products.filter(p => normStatus(p) === 'pending');
+  const myActive  = myPosts.filter(p => normStatus(p) === 'active');
+  const myPending = myPosts.filter(p => normStatus(p) === 'pending');
 
   document.getElementById('statActive').textContent    = myActive.length;
   document.getElementById('statPending').textContent   = myPending.length;
@@ -274,7 +292,7 @@ function renderDashHome() {
   document.getElementById('statRequests').textContent  = barterRequests.length;
 
   // Recent listings (last 5)
-  const recent = products.slice(-5).reverse();
+  const recent = myPosts.slice(0, 5);
   const rlEl = document.getElementById('dashRecentListings');
   if (!recent.length) {
     rlEl.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px;">
@@ -323,14 +341,13 @@ function renderDashHome() {
 // EDIT LISTING — redirects to list-item.html
 // ════════════════════════════════════════════════════
 function renderEditList() {
-  const products = getProducts();
   const c = document.getElementById('editListingList');
-  if (!products.length) {
+  if (!myPosts.length) {
     c.innerHTML = emptyState('fa-solid fa-pen-to-square','No listings to edit','Add a listing first.',
       `<a href="#" onclick="navigate('addListing');return false;" class="btn-primary-sm" style="margin:0 auto;"><i class="fa-solid fa-plus"></i> Add Listing</a>`);
     return;
   }
-  c.innerHTML = products.map(p => `
+  c.innerHTML = myPosts.map(p => `
     <div class="listing-card">
       ${thumbEl(p)}
       <div class="listing-info">
@@ -360,13 +377,12 @@ function goEdit(id) {
 // DELETE LISTING
 // ════════════════════════════════════════════════════
 function renderDeleteList() {
-  const products = getProducts();
   const c = document.getElementById('deleteListingList');
-  if (!products.length) {
+  if (!myPosts.length) {
     c.innerHTML = emptyState('fa-solid fa-trash','No listings','You have no listings to delete.');
     return;
   }
-  c.innerHTML = products.map(p => `
+  c.innerHTML = myPosts.map(p => `
     <div class="listing-card">
       ${thumbEl(p)}
       <div class="listing-info">
@@ -392,20 +408,32 @@ function promptDelete(id, name) {
   new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 
-function doDelete() {
-  saveProducts(getProducts().filter(x => String(x.id) !== String(pendingDeleteId)));
-  bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
-  showToast('Listing deleted.', 'success');
-  renderSection(currentSection);
-  renderDashHome();
+async function doDelete() {
+  const token = localStorage.getItem('barterToken');
+  try {
+    const res = await fetch(`${API_BASE_URL}/posts/${pendingDeleteId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Delete failed');
+    }
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    await loadMyPosts();
+    showToast('Listing deleted.', 'success');
+    renderSection(currentSection);
+    renderDashHome();
+  } catch(e) {
+    showToast(e.message || 'Could not delete listing.', 'error');
+  }
 }
 
 // ════════════════════════════════════════════════════
 // ACTIVE LISTINGS
 // ════════════════════════════════════════════════════
 function renderActiveListings() {
-  const products = getProducts();
-  const active = products.filter(p => normStatus(p) === 'active');
+  const active = myPosts.filter(p => normStatus(p) === 'active');
   document.getElementById('activeCount').textContent = `${active.length} Active`;
   const c = document.getElementById('activeListingsList');
   if (!active.length) {
@@ -440,8 +468,7 @@ function renderActiveListings() {
 // PENDING LISTINGS
 // ════════════════════════════════════════════════════
 function renderPendingListings() {
-  const products = getProducts();
-  const pending = products.filter(p => normStatus(p) === 'pending');
+  const pending = myPosts.filter(p => normStatus(p) === 'pending');
   document.getElementById('pendingCount').textContent = `${pending.length} Pending`;
   const c = document.getElementById('pendingListingsList');
   if (!pending.length) {
@@ -865,8 +892,7 @@ function resetListingForm() {
 }
 
 function loadEditIntoForm(id) {
-  const products = JSON.parse(localStorage.getItem('bartifyProducts') || '[]');
-  const p = products.find(x => String(x.id) === String(id));
+  const p = myPosts.find(x => String(x.id) === String(id));
   if (!p) return;
   editingId = id;
   document.getElementById('addListingTitle').textContent  = 'Edit Listing';
@@ -933,91 +959,67 @@ async function publishListing(e) {
   const cat   = document.getElementById('itemCat').value;
   if (!title || !cat) { showToast('Please fill in Title and Category.','error'); return; }
 
+  const token = localStorage.getItem('barterToken');
+  if (!token) { showToast('Please log in again before publishing.', 'error'); return; }
+
   const fromVal  = parseInt(document.getElementById('valueFrom').value) || 0;
   const toVal    = parseInt(document.getElementById('valueTo').value)   || fromVal;
   const condVal  = parseInt(document.getElementById('itemCond').value)  || 0;
-  const condLabel = condVal >= 9 ? 'Like New' : condVal >= 7 ? 'Good' : condVal >= 5 ? 'Fair' : condVal > 0 ? 'Poor' : '';
-  const tradeVal  = (document.getElementById('itemTrade').value.trim()).slice(0, 20);
-  const images   = uploadedImages.filter(Boolean);
-  const user     = getUser();
-  const today    = new Date().toISOString().split('T')[0];
+  const tradeVal = (document.getElementById('itemTrade').value.trim()).slice(0, 30);
 
-  let products = JSON.parse(localStorage.getItem('bartifyProducts') || '[]');
+  const formData = new FormData();
+  formData.append('title',            title);
+  formData.append('description',      document.getElementById('itemDesc').value.trim());
+  formData.append('in_exchange_for',  tradeVal);
+  formData.append('category',         cat);
+  formData.append('price_from',       String(fromVal));
+  formData.append('price_to',         String(toVal));
+  formData.append('condition_score',  String(condVal));
 
   if (editingId) {
-    products = products.map(p => {
-      if (String(p.id) === String(editingId)) {
-        return {
-          ...p,
-          title, cat, category: cat,
-          desc:  document.getElementById('itemDesc').value.trim(),
-          trade: tradeVal,
-          cond: condVal, condLabel,
-          value: fromVal, valueFrom: fromVal, valueTo: toVal,
-          images: images.length ? images : (p.images || []),
-          status: p.status || 'active'
-        };
-      }
-      return p;
-    });
-    localStorage.setItem('bartifyProducts', JSON.stringify(products));
-    showToast('Listing updated!', 'success');
-    resetListingForm();
-    setTimeout(() => navigate('activeListings'), 900);
-  } else {
-    const token = localStorage.getItem('barterToken');
-    if (!token) {
-      showToast('Please log in again before publishing a listing.', 'error');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', document.getElementById('itemDesc').value.trim());
-    formData.append('in_exchange_for', tradeVal);
-    formData.append('category', cat);
-    formData.append('price_from', String(fromVal));
-    formData.append('price_to', String(toVal));
-    formData.append('condition_score', String(condVal));
-
+    // ── EDIT: PUT /posts/{id} ──
+    // Only attach NEW files (existing images stay on server)
     uploadedImageFiles.forEach(file => {
       if (file) formData.append('images', file);
     });
 
     try {
-      const response = await fetch(`${API_BASE_URL}/posts/`, {
+      const res = await fetch(`${API_BASE_URL}/posts/${editingId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.detail || 'Failed to update listing');
+
+      await loadMyPosts();
+      showToast('Listing updated! ✅', 'success');
+      resetListingForm();
+      setTimeout(() => navigate('activeListings'), 900);
+    } catch(err) {
+      showToast(err.message || 'Could not update listing.', 'error');
+    }
+
+  } else {
+    // ── CREATE: POST /posts/ ──
+    uploadedImageFiles.forEach(file => {
+      if (file) formData.append('images', file);
+    });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/posts/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.detail || data?.message || 'Failed to publish listing');
 
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data?.detail || data?.message || 'Failed to publish listing');
-      }
-
-      const created = data.post || data;
-      const newProduct = buildLocalProductFromBackend(created, {
-        title,
-        cat,
-        desc: document.getElementById('itemDesc').value.trim(),
-        trade: tradeVal,
-        cond: condVal,
-        condLabel,
-        valueFrom: fromVal,
-        valueTo: toVal,
-        date: today,
-        sellerName: user.firstName ? `${user.firstName} ${user.lastName||''}`.trim() : (user.name || 'User'),
-        sellerAvatar: user.avatar || user.picture || user.user_image || null,
-        ownerEmail: user.email || ''
-      });
-
-      products.push(newProduct);
-      localStorage.setItem('bartifyProducts', JSON.stringify(products));
+      await loadMyPosts();
       showToast('Listing published! 🎉', 'success');
       resetListingForm();
       setTimeout(() => navigate('activeListings'), 900);
-    } catch (err) {
+    } catch(err) {
       showToast(err.message || 'Could not publish listing.', 'error');
     }
   }
@@ -1055,9 +1057,11 @@ function syncValueTo() {
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const u = getOrInitUser();
   applyUserToUI(u);
+
+  await loadMyPosts();
 
   // Check if redirected with a specific section (from index.html "List Item", etc.)
   const urlParams = new URLSearchParams(window.location.search);

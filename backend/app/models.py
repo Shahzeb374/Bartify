@@ -53,7 +53,7 @@ class Post(Base):
 
     user_id = Column(Integer, ForeignKey("users.u_id"))
     title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
+    description = Column(Text, nullable=False, max_length=100)
     in_exchange_for = Column(String(255), nullable=False)
 
     category_id = Column(Integer, ForeignKey("categories.c_id"))

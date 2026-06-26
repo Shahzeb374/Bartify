@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session, joinedload
-from app import models
+from app import models, schemas
 from app.utils.dependencies import get_current_user, get_db
 from pathlib import Path
 from typing import List, Optional
@@ -46,6 +46,29 @@ def _build_post_payload(post: models.Post, category_name: str, image_urls: list[
         "ownerEmail": owner.email,
         "user_id": owner.u_id
     }
+
+
+# ═══ GET MY POSTS (logged-in user) ═══
+@router.get("/my")
+def get_my_posts(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    posts = db.query(models.Post).options(
+        joinedload(models.Post.category),
+        joinedload(models.Post.images)
+    ).filter(
+        models.Post.user_id == current_user.u_id,
+        models.Post.status == 1
+    ).order_by(models.Post.created_at.desc()).all()
+
+    result = []
+    for post in posts:
+        image_urls = [img.image_url for img in post.images if img.status == 1]
+        cat_name = post.category.category if post.category else "General"
+        result.append(_build_post_payload(post, cat_name, image_urls, current_user))
+
+    return {"posts": result, "total": len(result)}
 
 
 # ═══ GET ALL POSTS ═══
@@ -114,11 +137,117 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
     return _build_post_payload(post, cat_name, image_urls, post.user)
 
 
+# ═══ UPDATE POST ═══
+@router.put("/{post_id}")
+async def update_post(
+    post_id: int,
+    title: str = Form(None),
+    description: str = Form(None),
+    in_exchange_for: str = Form(None),
+    category: str = Form(None, max_length=100),
+    price_from: float = Form(None),
+    price_to: float = Form(None),
+    condition_score: int = Form(None),
+    images: List[UploadFile] = File(default=[]),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    post = db.query(models.Post).options(
+        joinedload(models.Post.category),
+        joinedload(models.Post.images)
+    ).filter(models.Post.p_id == post_id).first()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != current_user.u_id:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this post")
+
+    # Update text fields
+    if title:              post.title          = title.strip()
+    if description:        post.description    = description.strip()
+    if in_exchange_for is not None: post.in_exchange_for = in_exchange_for.strip()
+    if price_from is not None:      post.price_from      = price_from
+    if price_to   is not None:      post.price_to        = price_to
+    if condition_score is not None: post.condition_score = condition_score
+
+    if category:
+        cat_name = category.strip()
+        category_row = db.query(models.Category).filter(
+            models.Category.category == cat_name,
+            models.Category.status == 1
+        ).first()
+        if not category_row:
+            category_row = models.Category(category=cat_name, status=1)
+            db.add(category_row)
+            db.flush()
+        post.category_id = category_row.c_id
+
+    # Replace images if new ones uploaded
+    valid_images = [img for img in (images or []) if img and img.filename]
+    new_image_urls: list[str] = []
+
+    if valid_images:
+        # Remove old image records and files
+        db.query(models.ProductImage).filter(
+            models.ProductImage.product_id == post_id
+        ).delete()
+        old_folder = UPLOAD_ROOT / f"user_{current_user.u_id}" / f"post_{post_id}"
+        shutil.rmtree(old_folder, ignore_errors=True)
+
+        user_folder = UPLOAD_ROOT / f"user_{current_user.u_id}" / f"post_{post_id}"
+        user_folder.mkdir(parents=True, exist_ok=True)
+
+        for index, image in enumerate(valid_images):
+            file_name  = _safe_filename(image.filename, index)
+            file_path  = user_folder / file_name
+            contents   = await image.read()
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            image_url = f"/uploads/posts/user_{current_user.u_id}/post_{post_id}/{file_name}"
+            new_image_urls.append(image_url)
+            db.add(models.ProductImage(product_id=post_id, image_url=image_url, status=1))
+    else:
+        # Keep existing images
+        new_image_urls = [img.image_url for img in post.images if img.status == 1]
+
+    db.commit()
+    db.refresh(post)
+
+    cat_label = post.category.category if post.category else "General"
+    return {
+        "message": "Post updated",
+        "post": _build_post_payload(post, cat_label, new_image_urls, current_user)
+    }
+
+
+# ═══ DELETE POST ═══
+@router.delete("/{post_id}")
+def delete_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    post = db.query(models.Post).filter(models.Post.p_id == post_id).first()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != current_user.u_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+
+    # Remove uploaded image files from disk
+    folder = UPLOAD_ROOT / f"user_{current_user.u_id}" / f"post_{post_id}"
+    shutil.rmtree(folder, ignore_errors=True)
+
+    db.delete(post)
+    db.commit()
+    return {"message": "Post deleted successfully"}
+
+
 # ═══ CREATE POST ═══
 @router.post("/")
 async def create_post(
     title: str = Form(...),
-    description: str = Form(...),
+    description: str = Form(..., max_length=100),
     in_exchange_for: str = Form(""),
     category: str = Form(...),
     price_from: float = Form(...),

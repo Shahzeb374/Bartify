@@ -109,8 +109,17 @@
   <!-- ── DASHBOARD HOME ── -->
   <section id="sec-dashHome" class="section active">
     <div class="dash-welcome">
-      <h2 id="dashGreet">Welcome back!</h2>
-      <p>Here's an overview of your Bartify activity.</p>
+      <div class="dash-welcome-copy">
+        <h2 id="dashGreet">Welcome back!</h2>
+        <p>Here's an overview of your Bartify activity.</p>
+      </div>
+      <div class="dash-user-card">
+        <div class="dash-user-avatar profile-avatar" id="dashUserAvatar"></div>
+        <div class="dash-user-meta">
+          <div class="dash-user-name" id="dashUserName">—</div>
+          <div class="dash-user-email" id="dashUserEmail">—</div>
+        </div>
+      </div>
     </div>
     <div class="stats-grid">
       <div class="stat-card" onclick="navigate('activeListings')">
@@ -179,7 +188,7 @@
           </div>
           <div class="col-12">
             <label class="ali-label">Description</label>
-            <textarea class="ali-input" id="itemDesc" rows="4" placeholder="Describe the item's condition, features, and why you're trading it…"></textarea>
+            <textarea class="ali-input" id="itemDesc" rows="4" maxlength="100" placeholder="Describe the item's condition, features, and why you're trading it in 100 characters."></textarea>
           </div>
           <div class="col-md-6">
             <label class="ali-label">Category <span class="text-danger">*</span></label>
