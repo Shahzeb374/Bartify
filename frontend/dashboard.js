@@ -1,5 +1,5 @@
 const API_BASE_URL = 'http://127.0.0.1:8000';
-// const API_BASE_URL = 'http://PC-IP:8000';
+// const API_BASE_URL = 'http://192.168.100.6:8000';
 
 function resolveProfileImageUrl(src) {
   if (!src) return null;
@@ -600,11 +600,6 @@ function renderViewProfile() {
   document.getElementById('profileViewFirst').textContent = firstName || '—';
   document.getElementById('profileViewLast').textContent  = lastName  || '—';
   document.getElementById('profileViewPhone').textContent = u.phone || '—';
-  document.getElementById('profileViewCity').textContent  = u.city  || '—';
-
-  const bw = document.getElementById('profileBioWrap');
-  bw.style.display = u.bio ? 'block' : 'none';
-  if (u.bio) document.getElementById('profileViewBio').textContent = u.bio;
 
   setAvatarEl(document.getElementById('profileViewAvatar'), resolveProfileImageUrl(u.avatar || u.picture || u.user_image), initial);
 }
@@ -622,8 +617,6 @@ function populateEditProfileForm() {
   document.getElementById('epLastName').value  = lastName;
   document.getElementById('epEmail').value     = u.email || '';
   document.getElementById('epPhone').value     = u.phone || '';
-  document.getElementById('epCity').value      = u.city  || '';
-  document.getElementById('epBio').value       = u.bio   || '';
 
   setAvatarEl(
     document.getElementById('editAvatarPreview'),
@@ -643,21 +636,59 @@ function handleAvatarChange(e) {
   reader.readAsDataURL(file);
 }
 
-function saveProfile(e) {
+async function saveProfile(e) {
   e.preventDefault();
-  const u = getOrInitUser();
-  u.firstName = document.getElementById('epFirstName').value.trim();
-  u.lastName  = document.getElementById('epLastName').value.trim();
-  u.name      = `${u.firstName} ${u.lastName}`.trim();
-  u.phone     = document.getElementById('epPhone').value.trim();
-  u.city      = document.getElementById('epCity').value.trim();
-  u.bio       = document.getElementById('epBio').value.trim();
-  if (tempAvatarDataUrl !== undefined) { u.avatar = tempAvatarDataUrl; u.picture = tempAvatarDataUrl; }
+  const token = localStorage.getItem('barterToken');
+  if (!token) {
+    showToast('Please log in again.', 'error');
+    return;
+  }
 
-  saveUser(u);
-  applyUserToUI(u);
-  showToast('Profile updated successfully!','success');
-  navigate('viewProfile');
+  const firstName = document.getElementById('epFirstName').value.trim();
+  const lastName  = document.getElementById('epLastName').value.trim();
+  const phone     = document.getElementById('epPhone').value.trim();
+  const fullName  = `${firstName} ${lastName}`.trim();
+
+  const formData = new FormData();
+  formData.append('name', fullName);
+  formData.append('contact', phone);
+
+  const avatarFile = document.getElementById('avatarUpload').files[0];
+  if (avatarFile) {
+    formData.append('user_image', avatarFile);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/profile`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.detail || 'Failed to update profile');
+    }
+
+    // Update localStorage
+    const u = getOrInitUser();
+    u.firstName = firstName;
+    u.lastName = lastName;
+    u.name = fullName;
+    u.phone = phone;
+    if (data.user?.picture) {
+      u.avatar = resolveProfileImageUrl(data.user.picture);
+      u.picture = u.avatar;
+      u.user_image = u.avatar;
+    }
+    saveUser(u);
+    applyUserToUI(u);
+
+    showToast('Profile updated successfully! ✅', 'success');
+    navigate('viewProfile');
+  } catch(err) {
+    showToast(err.message || 'Could not update profile.', 'error');
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -683,6 +714,9 @@ function confirmLogout() {
 }
 
 function doLogout() {
+  localStorage.removeItem('barterToken');
+  localStorage.removeItem('barterUser');
+  localStorage.removeItem('bartifyUser');
   bootstrap.Modal.getInstance(document.getElementById('logoutModal')).hide();
   showToast('Logged out. Redirecting…');
   setTimeout(() => { window.location.href = 'index.html'; }, 1400);

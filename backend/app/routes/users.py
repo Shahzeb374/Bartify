@@ -6,7 +6,7 @@ from app.database import SessionLocal
 from app import models, schemas
 from app.utils.security import hash_password, verify_password
 from app.auth import create_access_token
-from app.utils.dependencies import get_db
+from app.utils.dependencies import get_db, get_current_user
 
 router = APIRouter()
 
@@ -61,7 +61,6 @@ async def signup(
             "id": new_user.u_id,
             "name": new_user.name,
             "email": new_user.email,
-            "contact": new_user.contact,
             "picture": new_user.user_image
         }
     }
@@ -81,7 +80,52 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
             "id": db_user.u_id,
             "name": db_user.name,
             "email": db_user.email,
-            "contact": db_user.contact,
             "picture": db_user.user_image
+        }
+    }
+
+
+# ═══ UPDATE PROFILE ═══
+@router.put("/profile")
+async def update_profile(
+    name: str = Form(None),
+    contact: str = Form(None),
+    user_image: UploadFile = File(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if name:
+        current_user.name = name.strip()
+    if contact:
+        current_user.contact = contact.strip()
+    
+    if user_image:
+        # ← Purani image delete karo
+        if current_user.user_image and current_user.user_image.startswith('/uploads/profiles/'):
+            old_file = current_user.user_image.replace('/uploads/profiles/', '')
+            old_path = os.path.join(UPLOAD_DIR, old_file)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        
+        # ← Naya image save karo
+        file_ext = user_image.filename.split(".")[-1]
+        file_name = f"{current_user.email.split('@')[0]}_{int.from_bytes(os.urandom(4), 'big')}.{file_ext}"
+        file_path = os.path.join(UPLOAD_DIR, file_name)
+        contents = await user_image.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        current_user.user_image = f"/uploads/profiles/{file_name}"
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    return {
+        "message": "Profile updated successfully",
+        "user": {
+            "id": current_user.u_id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "contact": current_user.contact,
+            "picture": current_user.user_image
         }
     }
