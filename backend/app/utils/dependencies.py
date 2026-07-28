@@ -21,11 +21,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         user_id = payload.get("user_id")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError as e:
+        # Token expired or invalid
+        if "expired" in str(e).lower():
+            raise HTTPException(status_code=401, detail="Token expired")
+        else:
+            raise HTTPException(status_code=401, detail="Invalid token")
     
     user = db.query(models.User).filter(models.User.u_id == user_id).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="User not found")
     
     return user

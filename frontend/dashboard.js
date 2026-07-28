@@ -694,16 +694,74 @@ async function saveProfile(e) {
 // ════════════════════════════════════════════════════
 // CHANGE PASSWORD
 // ════════════════════════════════════════════════════
-function changePassword(e) {
+async function changePassword(e) {
   e.preventDefault();
-  const np = document.getElementById('cpNew').value;
-  const cp = document.getElementById('cpConfirm').value;
-  if (np !== cp) { showToast('Passwords do not match.','error'); return; }
-  const u = getOrInitUser();
-  u.password = np;
-  saveUser(u);
-  showToast('Password updated successfully!','success');
-  e.target.reset();
+  const token = localStorage.getItem('barterToken');
+  if (!token) {
+    showToast('Please log in first.', 'error');
+    return;
+  }
+
+  const current = document.getElementById('cpCurrent').value;
+  const newPwd  = document.getElementById('cpNew').value;
+  const confirm = document.getElementById('cpConfirm').value;
+
+  if (!current || !newPwd || !confirm) {
+    showToast('All fields are required.', 'error');
+    return;
+  }
+
+  if (newPwd !== confirm) {
+    showToast('New passwords do not match.', 'error');
+    return;
+  }
+
+  if (newPwd.length < 6) {
+    showToast('Password must be at least 6 characters.', 'error');
+    return;
+  }
+
+  if (!/[A-Z]/.test(newPwd)) {
+    showToast('Password must contain uppercase letter.', 'error');
+    return;
+  }
+
+  if (!/[0-9]/.test(newPwd)) {
+    showToast('Password must contain digit.', 'error');
+    return;
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPwd)) {
+    showToast('Password must contain special character.', 'error');
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('current_password', current);
+    formData.append('new_password', newPwd);
+
+    const res = await fetch(`${API_BASE_URL}/users/change-password`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.detail || 'Failed to change password');
+    }
+
+    showToast('Password changed successfully! Logging you out…', 'success');
+    setTimeout(() => {
+      localStorage.removeItem('barterToken');
+      localStorage.removeItem('barterUser');
+      localStorage.removeItem('bartifyUser');
+      window.location.href = 'login.html';
+    }, 2000);
+  } catch(err) {
+    showToast(err.message || 'Could not change password.', 'error');
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -1091,6 +1149,28 @@ function syncValueTo() {
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// TOKEN EXPIRY HANDLING
+// ════════════════════════════════════════════════════
+function handleTokenExpiry() {
+  localStorage.removeItem('barterToken');
+  localStorage.removeItem('barterUser');
+  localStorage.removeItem('bartifyUser');
+  showToast('Session expired. Please log in again.', 'error');
+  setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+}
+
+// Wrap fetch calls to handle 401 globally
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+  return originalFetch.apply(this, args).then(response => {
+    if (response.status === 401) {
+      handleTokenExpiry();
+    }
+    return response;
+  });
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   const u = getOrInitUser();
   applyUserToUI(u);

@@ -129,3 +129,35 @@ async def update_profile(
             "picture": current_user.user_image
         }
     }
+
+
+# ═══ CHANGE PASSWORD ═══
+@router.post("/change-password")
+async def change_password(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    # Verify current password
+    if not verify_password(current_password, current_user.password):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    
+    # Validate new password strength
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    if not any(c.isupper() for c in new_password):
+        raise HTTPException(status_code=400, detail="Password must contain uppercase letter")
+    
+    if not any(c.isdigit() for c in new_password):
+        raise HTTPException(status_code=400, detail="Password must contain digit")
+    
+    if not any(c in "!@#$%^&*()_+-=[]{}';:,.<>?" for c in new_password):
+        raise HTTPException(status_code=400, detail="Password must contain special character")
+    
+    # Update password
+    current_user.password = hash_password(new_password)
+    db.commit()
+    
+    return {"message": "Password changed successfully"}
