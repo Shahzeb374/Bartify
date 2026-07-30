@@ -1,8 +1,3 @@
-/* ═══ AUTH ═══ */
-const API_BASE_URL = 'http://127.0.0.1:8000';
-// const API_BASE_URL = 'http://PC-IP:8000';
-
-
 /* ═══ STATE ═══ */
 
 /* ═══ STATE ═══ */
@@ -84,6 +79,13 @@ async function renderProducts() {
     }
 
     grid.innerHTML = list.map(p => cardHTML(p)).join('');
+
+    // Agar dashboard se ?view=<id> ke saath redirect hua ho — wahi modal kholo
+    const viewId = new URLSearchParams(window.location.search).get('view');
+    if (viewId) {
+      openDetail(viewId);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
 
   } catch (err) {
     console.error('Failed to load posts:', err);
@@ -230,6 +232,8 @@ function offerExchange(id) {
   showToast('Exchange offer sent! 🎉', 'success');
 }
 
+/* ═══ AUTH ═══ */
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function resolveProfileImageUrl(src) {
   if (!src) return null;

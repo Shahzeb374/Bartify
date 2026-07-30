@@ -342,12 +342,13 @@ function renderDashHome() {
 // ════════════════════════════════════════════════════
 function renderEditList() {
   const c = document.getElementById('editListingList');
-  if (!myPosts.length) {
-    c.innerHTML = emptyState('fa-solid fa-pen-to-square','No listings to edit','Add a listing first.',
+  const editable = myPosts.filter(p => normStatus(p) === 'active');
+  if (!editable.length) {
+    c.innerHTML = emptyState('fa-solid fa-pen-to-square','No listings to edit','Approved listings will appear here for editing.',
       `<a href="#" onclick="navigate('addListing');return false;" class="btn-primary-sm" style="margin:0 auto;"><i class="fa-solid fa-plus"></i> Add Listing</a>`);
     return;
   }
-  c.innerHTML = myPosts.map(p => `
+  c.innerHTML = editable.map(p => `
     <div class="listing-card">
       ${thumbEl(p)}
       <div class="listing-info">
@@ -368,9 +369,99 @@ function renderEditList() {
 }
 
 function goEdit(id) {
+  const p = myPosts.find(x => String(x.id) === String(id));
+  if (p && normStatus(p) === 'pending') {
+    showToast('Pending listings can’t be edited until they’re approved.', 'error');
+    return;
+  }
   navigate('addListing');
   // slight delay so section is visible before we fill it
   setTimeout(() => loadEditIntoForm(id), 30);
+}
+
+/* ═══ PRODUCT DETAIL MODAL (dashboard ke andar hi — homepage jaisa card) ═══ */
+function openDetail(id) {
+  const p = myPosts.find(x => String(x.id) === String(id));
+  if (!p) return;
+
+  const condLabel = p.cond ? (p.cond + '/10') : (p.condLabel || '');
+  const condPillClass = p.cond >= 9 ? 'like-new' : p.cond >= 7 ? 'good' : p.cond >= 5 ? 'fair' : 'poor';
+
+  const sellerName = (p.seller && p.seller.name) ? p.seller.name : (p.ownerName || 'Bartify User');
+  const sellerInit = sellerName.charAt(0).toUpperCase();
+  const sellerAvHTML = (p.seller && p.seller.avatar) ? `<img src="${p.seller.avatar}" alt="">` : sellerInit;
+  const dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US',{ month:'numeric', day:'numeric', year:'numeric' }) : '';
+
+  const imgs = (p.images && p.images.length) ? p.images : [];
+  const mainHTML = imgs.length
+    ? `<img src="${imgs[0]}" alt="${esc(p.title)}" class="pd-main-img" id="pdMainImg">`
+    : `<div class="pd-main-placeholder"><i class="bi bi-image"></i></div>`;
+  const thumbsHTML = imgs.length > 1
+    ? `<div class="pd-thumbs">${imgs.map((src,i) =>
+        `<img src="${src}" class="pd-thumb${i===0?' active':''}" onclick="switchImg('${src}',this)" alt="">`
+      ).join('')}</div>` : '';
+
+  const tradeHTML = p.trade
+    ? `<div class="pd-label">Looking for</div><p class="pd-trade-text">${esc(p.trade)}</p>` : '';
+
+  const condPillHTML = condLabel
+    ? `<div class="pd-cond-pill ${condPillClass}">
+         <i class="bi bi-patch-check-fill" style="font-size:14px;"></i>
+         Condition: ${esc(condLabel)}
+       </div>` : '';
+
+  const statusBadge = normStatus(p) === 'pending'
+    ? `<span class="listing-status status-pending" style="margin-left:8px;">Pending</span>` : '';
+
+  const actionHTML = normStatus(p) === 'pending'
+    ? `<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;font-size:.82rem;color:#92400e;display:flex;align-items:center;gap:8px;">
+         <i class="bi bi-hourglass-split"></i> Awaiting approval — editing is disabled until it's live.
+       </div>`
+    : `<button class="btn-edit-sm" style="width:100%;justify-content:center;" onclick="closeDetail();goEdit('${p.id}')"><i class="fa-solid fa-pen"></i> Edit this listing</button>`;
+
+  document.getElementById('pdBody').innerHTML = `
+    <div class="pd-gallery">
+      ${mainHTML}
+      ${thumbsHTML}
+    </div>
+    <div class="pd-info">
+      <h2 class="pd-title">${esc(p.title)}${statusBadge}</h2>
+      <div class="pd-seller">
+        <div class="pd-seller-av">${sellerAvHTML}</div>
+        <div><div class="pd-seller-name">${esc(sellerName)}</div></div>
+      </div>
+      <div class="pd-seller-meta">
+        ${dateStr ? `<span><i class="bi bi-calendar3"></i> ${dateStr}</span>` : ''}
+        <span><i class="bi bi-tag"></i> ${esc(normCat(p)||'General')}</span>
+      </div>
+      ${condPillHTML}
+      <div class="pd-label">Description</div>
+      <p class="pd-section-text">${esc(p.desc || 'No description provided.')}</p>
+      ${tradeHTML}
+      <div class="pd-value-box">
+        <div class="pd-label">Estimated value</div>
+        <div class="pd-value-big">Rs. ${normValue(p)}</div>
+      </div>
+      ${actionHTML}
+    </div>`;
+
+  document.getElementById('pdOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function switchImg(src, thumb) {
+  const main = document.getElementById('pdMainImg');
+  if (main) main.src = src;
+  document.querySelectorAll('.pd-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+
+function closeDetail() {
+  document.getElementById('pdOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function overlayClick(e) {
+  if (e.target === document.getElementById('pdOverlay')) closeDetail();
 }
 
 // ════════════════════════════════════════════════════
@@ -454,7 +545,7 @@ function renderActiveListings() {
           <div class="meta-item"><span class="meta-label">Posted</span><span class="meta-value">${p.date || '—'}</span></div>
         </div>
         <div class="listing-meta mt-2">
-          <button class="btn-view-sm"><i class="fa-regular fa-eye"></i> View</button>
+          <button class="btn-view-sm" onclick="openDetail('${p.id}')"><i class="fa-regular fa-eye"></i> View</button>
           <button class="btn-edit-sm" onclick="goEdit('${p.id}')"><i class="fa-solid fa-pen"></i> Edit</button>
         </div>
       </div>
@@ -485,6 +576,9 @@ function renderPendingListings() {
           <div class="meta-item"><span class="meta-label">Condition</span><span class="meta-value">${normCond(p)}</span></div>
           <div class="meta-item"><span class="meta-label">Est. Value</span><span class="meta-value">Rs. ${normValue(p)}</span></div>
           <div class="meta-item"><span class="meta-label">Submitted</span><span class="meta-value">${p.date || '—'}</span></div>
+        </div>
+        <div class="listing-meta mt-2">
+          <button class="btn-view-sm" onclick="openDetail('${p.id}')"><i class="fa-regular fa-eye"></i> View</button>
         </div>
       </div>
       <div class="listing-actions">

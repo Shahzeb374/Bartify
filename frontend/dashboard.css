@@ -379,3 +379,49 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
 .trade-limit-msg {
   font-size:11.5px; font-weight:500; color:var(--danger);
 }
+/* ═══ PRODUCT DETAIL MODAL (ported from style.css — homepage jaisa) ═══ */
+.pd-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:2000; backdrop-filter:blur(4px); align-items:flex-start; justify-content:center; padding:24px 16px; overflow-y:auto; }
+.pd-overlay.show { display:flex; }
+.pd-modal { background:#fff; border-radius:22px; max-width:900px; width:100%; position:relative; box-shadow:0 24px 64px rgba(0,0,0,.18); margin:auto; }
+.pd-close { position:absolute; top:18px; right:18px; width:36px; height:36px; border-radius:50%; background:#f0f4ff; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#374151; font-size:17px; transition:background .2s; z-index:10; }
+.pd-close:hover { background:#dce8ff; color:#1a56db; }
+.pd-back { display:inline-flex; align-items:center; gap:6px; font-size:.83rem; font-weight:600; color:#6b7280; background:none; border:none; cursor:pointer; padding:20px 24px 0; transition:color .15s; }
+.pd-back:hover { color:#1a56db; }
+.pd-body { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.pd-gallery { padding:20px 16px 24px 24px; }
+.pd-main-img { width:100%; aspect-ratio:4/3; border-radius:14px; object-fit:cover; background:#f0f4ff; display:block; margin-bottom:10px; }
+.pd-main-placeholder { width:100%; aspect-ratio:4/3; border-radius:14px; background:#f0f4ff; display:flex; align-items:center; justify-content:center; color:#c3d4f0; margin-bottom:10px; }
+.pd-main-placeholder i { font-size:4rem; }
+.pd-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
+.pd-thumb { width:70px; height:54px; border-radius:9px; object-fit:cover; cursor:pointer; border:2px solid transparent; transition:border-color .18s; flex-shrink:0; }
+.pd-thumb.active,.pd-thumb:hover { border-color:#1a56db; }
+.pd-info { padding:20px 24px 24px 16px; display:flex; flex-direction:column; }
+.pd-title { font-size:1.45rem; font-weight:800; color:#1a1a2e; margin-bottom:12px; letter-spacing:-.4px; line-height:1.25; }
+.pd-seller { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+.pd-seller-av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#1a56db,#3b82f6); color:#fff; font-weight:700; font-size:.85rem; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+.pd-seller-av img { width:100%; height:100%; object-fit:cover; }
+.pd-seller-name { font-weight:700; font-size:.9rem; color:#1a1a2e; }
+.pd-seller-meta { display:flex; align-items:center; gap:12px; font-size:.75rem; color:#9ca3af; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid #f0f4ff; }
+.pd-seller-meta i { font-size:12px; }
+.pd-cond-pill { display:inline-flex; align-items:center; gap:7px; padding:6px 16px; border-radius:30px; font-size:.82rem; font-weight:700; margin-bottom:14px; width:fit-content; }
+.pd-cond-pill.like-new { background:#f0fdf4; color:#16a34a; border:1.5px solid #bbf7d0; }
+.pd-cond-pill.good { background:#eff6ff; color:#1a56db; border:1.5px solid #bfdbfe; }
+.pd-cond-pill.fair { background:#fffbeb; color:#d97706; border:1.5px solid #fde68a; }
+.pd-cond-pill.poor { background:#fef2f2; color:#dc2626; border:1.5px solid #fecaca; }
+.pd-label { font-size:.7rem; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+.pd-section-text { font-size:.875rem; color:#6b7280; line-height:1.7; margin-bottom:16px; }
+.pd-trade-text { font-size:.875rem; color:#374151; font-weight:600; margin-bottom:16px; }
+.pd-value-box { margin-bottom:22px; }
+.pd-value-big { font-size:1.9rem; font-weight:800; color:#1a1a2e; letter-spacing:-.5px; }
+.pd-offer-btn { width:100%; background:linear-gradient(135deg,#1a56db,#3b82f6); color:#fff; border:none; font-family:'Inter',sans-serif; font-weight:700; font-size:1rem; padding:14px; border-radius:13px; cursor:pointer; box-shadow:0 4px 14px rgba(26,86,219,.3); transition:opacity .2s,transform .2s; }
+.pd-offer-btn:hover { opacity:.9; transform:translateY(-1px); }
+
+@media(max-width:767px){
+  .pd-body { grid-template-columns:1fr; }
+  .pd-gallery { padding:16px 16px 12px; }
+  .pd-info { padding:0 16px 20px; }
+  .pd-modal { border-radius:16px; }
+  .pd-title { font-size:1.2rem; }
+  .pd-value-big { font-size:1.5rem; }
+  .pd-thumbs { display:none; }
+}
