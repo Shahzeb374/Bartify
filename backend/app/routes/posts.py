@@ -36,7 +36,7 @@ def _build_post_payload(post: models.Post, category_name: str, image_urls: list[
         "valueFrom": float(post.price_from),
         "valueTo": float(post.price_to),
         "images": image_urls,
-        "status": "active",
+        "status": "active" if post.status == 1 else "pending",
         "date": created_at.split("T")[0] if created_at else None,
         "created_at": created_at,
         "seller": {
@@ -58,8 +58,7 @@ def get_my_posts(
         joinedload(models.Post.category),
         joinedload(models.Post.images)
     ).filter(
-        models.Post.user_id == current_user.u_id,
-        models.Post.status == 1
+        models.Post.user_id == current_user.u_id
     ).order_by(models.Post.created_at.desc()).all()
 
     result = []
@@ -142,9 +141,9 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
 async def update_post(
     post_id: int,
     title: str = Form(None),
-    description: str = Form(None),
+    description: str = Form(None, max_length=500),
     in_exchange_for: str = Form(None),
-    category: str = Form(None, max_length=100),
+    category: str = Form(None),
     price_from: float = Form(None),
     price_to: float = Form(None),
     condition_score: int = Form(None),
@@ -247,7 +246,7 @@ def delete_post(
 @router.post("/")
 async def create_post(
     title: str = Form(...),
-    description: str = Form(..., max_length=100),
+    description: str = Form(..., max_length=500),
     in_exchange_for: str = Form(""),
     category: str = Form(...),
     price_from: float = Form(...),
