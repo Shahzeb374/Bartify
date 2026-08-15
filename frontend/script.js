@@ -265,7 +265,29 @@ function getUserAvatar(user) {
   return user.avatar || user.picture || user.user_image || null;
 }
 
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return !payload.exp || Date.now() >= payload.exp * 1000;
+  } catch (e) {
+    return true; // decode na ho saka to expired treat karo
+  }
+}
+
+function clearSession() {
+  localStorage.removeItem('barterToken');
+  localStorage.removeItem('barterUser');
+  localStorage.removeItem('bartifyUser');
+}
+
 function checkLoginState() {
+  const token = localStorage.getItem('barterToken');
+  if (token && isTokenExpired(token)) {
+    clearSession();
+    showToast('Session expired. Please log in again.', 'error');
+  }
+
   const user = getUser();
   const out  = document.getElementById('navLoggedOut');
   const inn  = document.getElementById('navLoggedIn');
@@ -331,8 +353,7 @@ document.addEventListener('click', function(e) {
 });
 
 function logoutUser() {
-  localStorage.removeItem('barterUser');
-  localStorage.removeItem('bartifyUser');
+  clearSession();
   window.location.href = 'index.html';
 }
 
@@ -352,6 +373,20 @@ function esc(str) {
 }
 
 /* ═══ INIT ═══ */
+
+// Koi bhi API call 401 de to session clear karke UI turant update karo
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+  return originalFetch.apply(this, args).then(response => {
+    if (response.status === 401 && localStorage.getItem('barterToken')) {
+      clearSession();
+      checkLoginState();
+      showToast('Session expired. Please log in again.', 'error');
+    }
+    return response;
+  });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   checkLoginState();
   renderProducts();

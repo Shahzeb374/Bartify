@@ -143,7 +143,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
 .listing-thumb img { width:100%; height:100%; object-fit:cover; }
 .listing-info { flex:1; min-width:0; }
 .listing-name { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:15px; margin-bottom:4px; }
-.listing-desc { font-size:13px; color:var(--text-muted); margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.listing-desc { font-size:13px; color:var(--text-muted); margin-bottom:8px; display:-webkit-box; line-clamp:2; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .listing-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .listing-extra-meta { display:flex; gap:24px; margin-top:8px; flex-wrap:wrap; }
 .listing-extra-meta .meta-item { font-size:12px; }
@@ -349,6 +349,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
   flex:1; border:none; outline:none; padding:10px 14px;
   font-size:14px; font-family:'Inter',sans-serif;
   color:var(--text); background:transparent; min-width:0;
+  appearance:textfield;
   -moz-appearance:textfield;
 }
 .value-inner-input::-webkit-outer-spin-button,
