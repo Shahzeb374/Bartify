@@ -81,3 +81,42 @@ class ProductImage(Base):
     status = Column(Integer, default=1)
 
     post = relationship("Post", back_populates="images")
+
+
+#OFFERS  (jab koi user kisi post pr "Offer Exchange" kre)
+class Offer(Base):
+    __tablename__ = "offers"
+
+    o_id = Column(Integer, primary_key=True, index=True)
+
+    post_id = Column(Integer, ForeignKey("posts.p_id", ondelete="CASCADE"), nullable=False)
+    offering_user_id = Column(Integer, ForeignKey("users.u_id", ondelete="CASCADE"), nullable=False)
+
+    title = Column(String(255), nullable=False)
+    description = Column(String(500), nullable=True)
+    category_id = Column(Integer, ForeignKey("categories.c_id"), nullable=True)
+
+    price_from = Column(Numeric, nullable=True)
+    price_to = Column(Numeric, nullable=True)
+    condition_score = Column(Integer, nullable=True)
+
+    status = Column(Integer, default=1)  # 1=pending, future: accepted/rejected
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    post = relationship("Post")
+    offering_user = relationship("User")
+    category = relationship("Category")
+    images = relationship("OfferImage", back_populates="offer", cascade="all, delete")
+
+
+#OFFER IMAGES
+class OfferImage(Base):
+    __tablename__ = "offer_images"
+
+    oi_id = Column(Integer, primary_key=True, index=True)
+
+    offer_id = Column(Integer, ForeignKey("offers.o_id", ondelete="CASCADE"))
+    image_url = Column(Text)
+    status = Column(Integer, default=1)
+
+    offer = relationship("Offer", back_populates="images")

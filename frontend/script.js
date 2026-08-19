@@ -48,7 +48,10 @@ async function renderProducts() {
     if (currentQuery)             params.set('search', currentQuery);
     params.set('page_size', '50');
 
-    const res = await fetch(`${API_BASE_URL}/posts/?${params.toString()}`);
+    const token = localStorage.getItem('barterToken');
+    const res = await fetch(`${API_BASE_URL}/posts/?${params.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
     if (!res.ok) throw new Error('Server error: ' + res.status);
 
     const data = await res.json();
@@ -222,14 +225,130 @@ function overlayClick(e) {
   if (e.target === document.getElementById('pdOverlay')) closeDetail();
 }
 
-/* ═══ OFFER EXCHANGE — login gate ═══ */
+/* ═══ OFFER EXCHANGE — apna item detail dekar offer bhejna ═══ */
+let offerImages     = [null, null, null, null];
+let offerImageFiles = [null, null, null, null];
+
 function offerExchange(id) {
   if (!getUser()) {
     showToast('Please log in to offer an exchange.', 'error');
     setTimeout(() => { window.location.href = 'login.html'; }, 1300);
     return;
   }
-  showToast('Exchange offer sent! 🎉', 'success');
+
+  const p = cachedPosts.find(x => String(x.id) === String(id));
+  closeDetail();
+
+  document.getElementById('offerPostId').value = id;
+  document.getElementById('offerSubText').textContent = p
+    ? `Tell ${(p.seller && p.seller.name) || 'them'} what you'd like to trade for "${p.title}".`
+    : `Tell them what you'd like to trade.`;
+
+  document.getElementById('offerForm').reset();
+  offerImages     = [null, null, null, null];
+  offerImageFiles = [null, null, null, null];
+  renderOfferUploadSlots();
+
+  document.getElementById('offerOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOfferModal() {
+  document.getElementById('offerOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function overlayClickOffer(e) {
+  if (e.target === document.getElementById('offerOverlay')) closeOfferModal();
+}
+
+function renderOfferUploadSlots() {
+  const grid = document.getElementById('offerUploadGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const box = document.createElement('div');
+    box.className = 'of-upload-box';
+    if (offerImages[i]) {
+      box.innerHTML = `
+        <img src="${offerImages[i]}" class="of-preview" alt="img ${i+1}">
+        <button type="button" class="of-remove" onclick="removeOfferImage(${i})"><i class="bi bi-x"></i></button>`;
+    } else {
+      box.innerHTML = `
+        <i class="bi bi-cloud-arrow-up"></i>
+        <span>${i === 0 ? 'Upload' : 'Add'}</span>
+        <input type="file" accept="image/*" onchange="handleOfferImageUpload(event,${i})">`;
+    }
+    grid.appendChild(box);
+  }
+}
+
+function handleOfferImageUpload(e, index) {
+  const file = e.target.files[0];
+  if (!file) return;
+  offerImageFiles[index] = file;
+  const reader = new FileReader();
+  reader.onload = ev => { offerImages[index] = ev.target.result; renderOfferUploadSlots(); };
+  reader.readAsDataURL(file);
+}
+
+function removeOfferImage(index) {
+  offerImages[index]     = null;
+  offerImageFiles[index] = null;
+  renderOfferUploadSlots();
+}
+
+async function submitOffer(e) {
+  e.preventDefault();
+  const token = localStorage.getItem('barterToken');
+  if (!token) {
+    showToast('Please log in to offer an exchange.', 'error');
+    return;
+  }
+
+  const title = document.getElementById('offerTitle').value.trim();
+  const cat   = document.getElementById('offerCat').value;
+  if (!title || !cat) { showToast('Please fill in Title and Category.', 'error'); return; }
+
+  const fromValCheck = document.getElementById('offerValueFrom').value;
+  const toValCheck   = document.getElementById('offerValueTo').value;
+  if (fromValCheck && toValCheck && Number(fromValCheck) > Number(toValCheck)) {
+    showToast('"To" value must be greater than or equal to "From".', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('offerSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-hourglass-split"></i> Sending…`;
+
+  const fromVal = document.getElementById('offerValueFrom').value || '0';
+
+  const formData = new FormData();
+  formData.append('post_id', document.getElementById('offerPostId').value);
+  formData.append('title', title);
+  formData.append('description', document.getElementById('offerDesc').value.trim());
+  formData.append('category', cat);
+  formData.append('price_from', fromVal);
+  formData.append('price_to', document.getElementById('offerValueTo').value || fromVal);
+  formData.append('condition_score', document.getElementById('offerCond').value || '0');
+  offerImageFiles.forEach(file => { if (file) formData.append('images', file); });
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/offers/`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || 'Failed to send offer');
+
+    closeOfferModal();
+    showToast('Exchange offer sent! 🎉', 'success');
+  } catch (err) {
+    showToast(err.message || 'Could not send offer.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="bi bi-send"></i> Send Offer`;
+  }
 }
 
 /* ═══ AUTH ═══ */

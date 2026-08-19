@@ -117,6 +117,75 @@
   </div>
 </div>
 
+<!-- ═══ OFFER EXCHANGE MODAL ═══ -->
+<div class="of-overlay" id="offerOverlay" onclick="overlayClickOffer(event)">
+  <div class="of-modal" id="offerModal">
+    <button class="of-close" onclick="closeOfferModal()"><i class="bi bi-x-lg"></i></button>
+    <div class="of-header">
+      <h3 class="of-title">Offer an Exchange</h3>
+      <p class="of-sub" id="offerSubText">Tell them what you'd like to trade for this item.</p>
+    </div>
+    <form id="offerForm" onsubmit="submitOffer(event)" novalidate>
+      <input type="hidden" id="offerPostId">
+
+      <div class="of-upload-grid" id="offerUploadGrid"></div>
+      <p class="of-upload-note">Upload up to 4 images of your item.</p>
+
+      <label class="of-label">Item Title <span class="of-req">*</span></label>
+      <input type="text" class="of-input" id="offerTitle" placeholder="e.g. PS5 Controller" required>
+
+      <label class="of-label">Description</label>
+      <textarea class="of-input" id="offerDesc" rows="3" maxlength="500" placeholder="Describe your item's condition and features…"></textarea>
+
+      <div class="of-row">
+        <div>
+          <label class="of-label">Category <span class="of-req">*</span></label>
+          <select class="of-input" id="offerCat" required>
+            <option value="">Select category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Furniture">Furniture</option>
+            <option value="Sports">Sports</option>
+            <option value="Services">Services</option>
+            <option value="Music">Music</option>
+            <option value="Books">Books</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="of-label">Condition</label>
+          <select class="of-input" id="offerCond">
+            <option value="">Select</option>
+            <option value="10">10/10</option>
+            <option value="9">9/10</option>
+            <option value="8">8/10</option>
+            <option value="7">7/10</option>
+            <option value="6">6/10</option>
+            <option value="5">5/10</option>
+            <option value="4">4/10</option>
+            <option value="3">3/10</option>
+            <option value="2">2/10</option>
+            <option value="1">1/10</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="of-label">Estimated Value (PKR)</label>
+      <div class="of-value-wrap">
+        <span class="of-value-tag">From</span>
+        <input type="number" class="of-value-input" id="offerValueFrom" placeholder="500" min="0">
+        <span class="of-value-dash">—</span>
+        <span class="of-value-tag">To</span>
+        <input type="number" class="of-value-input" id="offerValueTo" placeholder="1000" min="0">
+      </div>
+
+      <button type="submit" class="of-submit-btn" id="offerSubmitBtn">
+        <i class="bi bi-send"></i> Send Offer
+      </button>
+    </form>
+  </div>
+</div>
+
 <!-- ═══ TOAST ═══ -->
 <div class="toast-wrap" id="toastWrap"></div>
 

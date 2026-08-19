@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session, joinedload
 from app import models, schemas
-from app.utils.dependencies import get_current_user, get_db
+from app.utils.dependencies import get_current_user, get_current_user_optional, get_db
 from pathlib import Path
 from typing import List, Optional
 import os
@@ -77,13 +77,18 @@ def get_posts(
     search: Optional[str] = Query(None, description="Search in title or description"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     query = db.query(models.Post).options(
         joinedload(models.Post.user),
         joinedload(models.Post.category),
         joinedload(models.Post.images)
     ).filter(models.Post.status == 1)
+
+    # Logged in ho to apni khud ki posts homepage feed se hatao
+    if current_user:
+        query = query.filter(models.Post.user_id != current_user.u_id)
 
     # Category filter
     if category and category.lower() != "all":
