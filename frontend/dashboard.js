@@ -72,30 +72,53 @@ async function loadMyPosts() {
 }
 
 // ════════════════════════════════════════════════════
-// BARTER REQUESTS (demo data)
+// BARTER REQUESTS (offers API se aate hain)
 // ════════════════════════════════════════════════════
-let barterRequests = [
-  { id:1, fromUser:'Sara Ahmed', fromInitial:'S', time:'2 hours ago',
-    yourItem:  { title:'Vintage Leather Armchair', image:'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=80&q=80' },
-    theirItem: { title:'Gaming Laptop',            image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=80&q=80' },
-    status:'received', message:"I'd love to exchange my gaming laptop for your armchair!" },
-  { id:2, fromUser:'Ali Raza', fromInitial:'A', time:'1 day ago',
-    yourItem:  { title:'Canon EOS 5D Mark III',   image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&q=80' },
-    theirItem: { title:'MacBook Pro 2022',         image:'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=80&q=80' },
-    status:'received', message:'Would love to trade my MacBook for your camera!' }
-];
-let completedBarters = [
-  { id:10, fromUser:'Hina Malik', fromInitial:'H', time:'1 week ago',
-    yourItem:  { title:'Bookshelf (Oak)', image:'https://images.unsplash.com/photo-1549497538-303791108f95?w=80&q=80' },
-    theirItem: { title:'Coffee Table',   image:'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=80&q=80' },
-    status:'completed' }
-];
-let cancelledBarters = [
-  { id:20, fromUser:'Usman Khan', fromInitial:'U', time:'3 days ago',
-    yourItem:  { title:'Mountain Bike',     image:'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=80&q=80' },
-    theirItem: { title:'Tennis Racket Set', image:'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=80&q=80' },
-    status:'cancelled' }
-];
+let receivedOffers = [];
+let sentOffers     = [];
+
+function fixOfferImageUrls(o) {
+  if (o.images) {
+    o.images = o.images.map(src => src && src.startsWith('/uploads/') ? `${API_BASE_URL}${src}` : src);
+  }
+  if (o.post_image && o.post_image.startsWith('/uploads/')) {
+    o.post_image = `${API_BASE_URL}${o.post_image}`;
+  }
+  if (o.offering_user?.avatar?.startsWith('/uploads/')) {
+    o.offering_user.avatar = `${API_BASE_URL}${o.offering_user.avatar}`;
+  }
+  return o;
+}
+
+async function loadReceivedOffers() {
+  const token = localStorage.getItem('barterToken');
+  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/offers/received`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    receivedOffers = (data.offers || []).map(fixOfferImageUrls);
+  } catch(e) {
+    console.error('Could not load received offers:', e);
+  }
+}
+
+async function loadSentOffers() {
+  const token = localStorage.getItem('barterToken');
+  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/offers/sent`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    sentOffers = (data.offers || []).map(fixOfferImageUrls);
+  } catch(e) {
+    console.error('Could not load sent offers:', e);
+  }
+}
 
 let pendingDeleteId   = null;
 let tempAvatarDataUrl = undefined;
@@ -172,8 +195,9 @@ function showSection(section) {
     editListing:'Edit Listing',      deleteListing:'Delete Listing',
     activeListings:'Active Listings', pendingListings:'Pending Listings',
     requestsReceived:'Barter Requests Received',
+    requestsSent:'Barter Requests Sent',
+    rejectedRequests:'Rejected Barter Requests',
     completedRequests:'Completed Barter Requests',
-    cancelledRequests:'Cancelled Barter Requests',
     viewProfile:'My Profile',        editProfile:'Edit Profile',
     changePassword:'Change Password'
   };
@@ -191,8 +215,9 @@ function renderSection(s) {
     activeListings:   renderActiveListings,
     pendingListings:  renderPendingListings,
     requestsReceived: renderRequestsReceived,
+    requestsSent:     renderRequestsSent,
+    rejectedRequests: renderRejectedRequests,
     completedRequests:renderCompletedRequests,
-    cancelledRequests:renderCancelledRequests,
     viewProfile:      renderViewProfile,
     editProfile:      populateEditProfileForm
   };
@@ -288,8 +313,11 @@ function renderDashHome() {
 
   document.getElementById('statActive').textContent    = myActive.length;
   document.getElementById('statPending').textContent   = myPending.length;
-  document.getElementById('statCompleted').textContent = completedBarters.length;
-  document.getElementById('statRequests').textContent  = barterRequests.length;
+  document.getElementById('statCompleted').textContent =
+    receivedOffers.filter(o => o.status === 'accepted').length +
+    sentOffers.filter(o => o.status === 'accepted').length;
+  document.getElementById('statRequests').textContent  =
+    receivedOffers.filter(o => o.status === 'pending').length;
 
   // Recent listings (last 5)
   const recent = myPosts.slice(0, 5);
@@ -590,93 +618,265 @@ function renderPendingListings() {
 // ════════════════════════════════════════════════════
 // BARTER REQUESTS
 // ════════════════════════════════════════════════════
-function requestCard(req, actions='') {
-  const badge = req.status !== 'received'
-    ? `<span class="listing-status status-${req.status}" style="text-transform:capitalize;">${req.status}</span>` : '';
+function formatOfferTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-PK', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function offerStatusClass(status) {
+  return status === 'accepted' ? 'completed' : status === 'rejected' ? 'cancelled' : 'pending';
+}
+
+function receivedRequestCardHTML(o) {
+  const fromName = (o.offering_user && o.offering_user.name) || 'Bartify User';
+  const fromInit = fromName.charAt(0).toUpperCase();
+  const myPost   = myPosts.find(p => String(p.id) === String(o.post_id));
+  const myImg    = myPost && myPost.images && myPost.images[0] ? myPost.images[0] : '';
+  const theirImg = (o.images && o.images[0]) || '';
+  const badge    = o.status !== 'pending'
+    ? `<span class="listing-status status-${offerStatusClass(o.status)}" style="text-transform:capitalize;">${o.status}</span>` : '';
+  const actions  = o.status === 'pending' ? `
+    <button class="btn-accept-sm" onclick="handleAcceptOffer(${o.id})"><i class="fa-solid fa-check"></i> Accept</button>
+    <button class="btn-reject-sm" onclick="handleRejectOffer(${o.id})"><i class="fa-solid fa-times"></i> Decline</button>
+    <button class="btn-view-sm" onclick="openOfferDetail(${o.id},'received')"><i class="fa-regular fa-eye"></i> View</button>
+  ` : `<button class="btn-view-sm" onclick="openOfferDetail(${o.id},'received')"><i class="fa-regular fa-eye"></i> View</button>`;
+
   return `
     <div class="request-card">
       <div class="request-top">
         <div class="request-user">
-          <div class="request-avatar">${req.fromInitial}</div>
+          <div class="request-avatar">${fromInit}</div>
           <div>
-            <div class="request-username">${esc(req.fromUser)}</div>
-            <div class="request-time"><i class="fa-regular fa-clock"></i> ${req.time}</div>
+            <div class="request-username">${esc(fromName)}</div>
+            <div class="request-time"><i class="fa-regular fa-clock"></i> ${formatOfferTime(o.created_at)}</div>
           </div>
         </div>
         ${badge}
       </div>
-      ${req.message ? `<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">"${esc(req.message)}"</p>` : ''}
+      ${o.description ? `<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">"${esc(o.description)}"</p>` : ''}
       <div class="request-exchange">
         <div class="exchange-item">
-          <div class="exchange-thumb">
-            <img src="${req.theirItem.image}" alt="" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-box\\'></i>'">
-          </div>
+          <div class="exchange-thumb">${theirImg ? `<img src="${theirImg}" alt="">` : `<i class="fa-solid fa-box"></i>`}</div>
           <div>
             <div class="exchange-label">Their Offer</div>
-            <div class="exchange-name">${esc(req.theirItem.title)}</div>
+            <div class="exchange-name">${esc(o.title)}</div>
           </div>
         </div>
         <div class="exchange-arrow"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
         <div class="exchange-item">
-          <div class="exchange-thumb">
-            <img src="${req.yourItem.image}" alt="" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-box\\'></i>'">
-          </div>
+          <div class="exchange-thumb">${myImg ? `<img src="${myImg}" alt="">` : `<i class="fa-solid fa-box"></i>`}</div>
           <div>
             <div class="exchange-label">Your Item</div>
-            <div class="exchange-name">${esc(req.yourItem.title)}</div>
+            <div class="exchange-name">${esc(o.post_title || 'Your listing')}</div>
           </div>
         </div>
       </div>
-      ${actions ? `<div class="request-actions">${actions}</div>` : ''}
+      <div class="request-actions">${actions}</div>
     </div>`;
 }
 
-function renderRequestsReceived() {
-  document.getElementById('receivedCount').textContent = `${barterRequests.length} Requests`;
-  const c = document.getElementById('requestsReceivedList');
-  if (!barterRequests.length) {
-    c.innerHTML = emptyState('fa-solid fa-arrow-right-arrow-left','No requests yet','Barter requests will appear here.');
-    return;
+function sentRequestCardHTML(o) {
+  const myImg    = (o.images && o.images[0]) || '';
+  const theirImg = o.post_image || '';
+  const badge    = `<span class="listing-status status-${offerStatusClass(o.status)}" style="text-transform:capitalize;">${o.status}</span>`;
+
+  return `
+    <div class="request-card">
+      <div class="request-top">
+        <div class="request-user">
+          <div class="request-avatar"><i class="fa-solid fa-store" style="font-size:14px;"></i></div>
+          <div>
+            <div class="request-username">${esc(o.post_owner_name || 'Bartify User')}</div>
+            <div class="request-time"><i class="fa-regular fa-clock"></i> ${formatOfferTime(o.created_at)}</div>
+          </div>
+        </div>
+        ${badge}
+      </div>
+      <div class="request-exchange">
+        <div class="exchange-item">
+          <div class="exchange-thumb">${myImg ? `<img src="${myImg}" alt="">` : `<i class="fa-solid fa-box"></i>`}</div>
+          <div>
+            <div class="exchange-label">You Offered</div>
+            <div class="exchange-name">${esc(o.title)}</div>
+          </div>
+        </div>
+        <div class="exchange-arrow"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+        <div class="exchange-item">
+          <div class="exchange-thumb">${theirImg ? `<img src="${theirImg}" alt="">` : `<i class="fa-solid fa-box"></i>`}</div>
+          <div>
+            <div class="exchange-label">For</div>
+            <div class="exchange-name">${esc(o.post_title || 'Listing')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="request-actions">
+        <button class="btn-view-sm" onclick="openOfferDetail(${o.id},'sent')"><i class="fa-regular fa-eye"></i> View</button>
+      </div>
+    </div>`;
+}
+
+/* ═══ OFFER DETAIL MODAL — same pdOverlay jo homepage/apni-post view mein use hota hai ═══ */
+function openOfferDetail(id, direction) {
+  const list = direction === 'received' ? receivedOffers : sentOffers;
+  const o = list.find(x => String(x.id) === String(id));
+  if (!o) return;
+
+  const condLabel = o.condition_score ? (o.condition_score + '/10') : '';
+  const condPillClass = o.condition_score >= 9 ? 'like-new' : o.condition_score >= 7 ? 'good' : o.condition_score >= 5 ? 'fair' : 'poor';
+
+  const imgs = (o.images && o.images.length) ? o.images : [];
+  const mainHTML = imgs.length
+    ? `<img src="${imgs[0]}" alt="${esc(o.title)}" class="pd-main-img" id="pdMainImg">`
+    : `<div class="pd-main-placeholder"><i class="bi bi-image"></i></div>`;
+  const thumbsHTML = imgs.length > 1
+    ? `<div class="pd-thumbs">${imgs.map((src,i) =>
+        `<img src="${src}" class="pd-thumb${i===0?' active':''}" onclick="switchImg('${src}',this)" alt="">`
+      ).join('')}</div>` : '';
+
+  const condPillHTML = condLabel
+    ? `<div class="pd-cond-pill ${condPillClass}">
+         <i class="bi bi-patch-check-fill" style="font-size:14px;"></i>
+         Condition: ${esc(condLabel)}
+       </div>` : '';
+
+  const valueHTML = (o.price_from || o.price_to)
+    ? `<div class="pd-value-box">
+         <div class="pd-label">Estimated value</div>
+         <div class="pd-value-big">Rs. ${normValue({valueFrom:o.price_from, valueTo:o.price_to, value:o.price_from})}</div>
+       </div>` : '';
+
+  const statusBadge = o.status !== 'pending'
+    ? `<span class="listing-status status-${offerStatusClass(o.status)}" style="margin-left:8px;text-transform:capitalize;">${o.status}</span>` : '';
+
+  let contextHTML = '';
+  let actionHTML  = '';
+
+  if (direction === 'received') {
+    const fromName = (o.offering_user && o.offering_user.name) || 'A user';
+    contextHTML = `
+      <div class="pd-seller">
+        <div class="pd-seller-av">${fromName.charAt(0).toUpperCase()}</div>
+        <div><div class="pd-seller-name">${esc(fromName)}</div><div style="font-size:.72rem;color:#9ca3af;">wants to trade for "${esc(o.post_title || '')}"</div></div>
+      </div>`;
+    if (o.status === 'pending') {
+      actionHTML = `
+        <div style="display:flex;gap:10px;">
+          <button class="btn-accept-sm" style="flex:1;justify-content:center;" onclick="handleAcceptOffer(${o.id})"><i class="fa-solid fa-check"></i> Accept</button>
+          <button class="btn-reject-sm" style="flex:1;justify-content:center;" onclick="handleRejectOffer(${o.id})"><i class="fa-solid fa-times"></i> Decline</button>
+        </div>`;
+    }
+  } else {
+    contextHTML = `
+      <div class="pd-seller">
+        <div class="pd-seller-av"><i class="fa-solid fa-store" style="font-size:14px;"></i></div>
+        <div><div class="pd-seller-name">Offer for "${esc(o.post_title || '')}"</div><div style="font-size:.72rem;color:#9ca3af;">Owner: ${esc(o.post_owner_name || 'Bartify User')}</div></div>
+      </div>`;
   }
-  c.innerHTML = barterRequests.map((r,i) => requestCard(r,`
-    <button class="btn-accept-sm" onclick="acceptRequest(${i})"><i class="fa-solid fa-check"></i> Accept</button>
-    <button class="btn-reject-sm" onclick="rejectRequest(${i})"><i class="fa-solid fa-times"></i> Decline</button>
-    <button class="btn-view-sm" onclick="openChatWith('${r.fromUser}','${r.fromInitial}')">
-      <i class="fa-regular fa-message"></i> Message
-    </button>
-  `)).join('');
+
+  document.getElementById('pdBody').innerHTML = `
+    <div class="pd-gallery">
+      ${mainHTML}
+      ${thumbsHTML}
+    </div>
+    <div class="pd-info">
+      <h2 class="pd-title">${esc(o.title)}${statusBadge}</h2>
+      ${contextHTML}
+      <div class="pd-seller-meta">
+        <span><i class="bi bi-tag"></i> ${esc(o.category || 'General')}</span>
+      </div>
+      ${condPillHTML}
+      <div class="pd-label">Description</div>
+      <p class="pd-section-text">${esc(o.description || 'No description provided.')}</p>
+      ${valueHTML}
+      ${actionHTML}
+    </div>`;
+
+  document.getElementById('pdOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
 }
 
-function acceptRequest(i) {
-  const r = barterRequests.splice(i,1)[0];
-  r.status = 'completed';
-  completedBarters.unshift(r);
-  showToast('Barter request accepted!','success');
-  renderRequestsReceived();
-  renderDashHome();
+async function handleAcceptOffer(id) {
+  const token = localStorage.getItem('barterToken');
+  try {
+    const res = await fetch(`${API_BASE_URL}/offers/${id}/accept`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to accept offer');
+    }
+    closeDetail();
+    await loadReceivedOffers();
+    showToast('Barter request accepted! 🎉', 'success');
+    renderSection(currentSection);
+    renderDashHome();
+  } catch(e) {
+    showToast(e.message || 'Could not accept offer.', 'error');
+  }
 }
 
-function rejectRequest(i) {
-  const r = barterRequests.splice(i,1)[0];
-  r.status = 'cancelled';
-  cancelledBarters.unshift(r);
-  showToast('Request declined.','error');
-  renderRequestsReceived();
-  renderDashHome();
+async function handleRejectOffer(id) {
+  const token = localStorage.getItem('barterToken');
+  try {
+    const res = await fetch(`${API_BASE_URL}/offers/${id}/reject`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to reject offer');
+    }
+    closeDetail();
+    await loadReceivedOffers();
+    showToast('Request declined.', 'error');
+    renderSection(currentSection);
+    renderDashHome();
+  } catch(e) {
+    showToast(e.message || 'Could not reject offer.', 'error');
+  }
+}
+
+function renderRequestsReceived() {
+  const pending = receivedOffers.filter(o => o.status === 'pending');
+  document.getElementById('receivedCount').textContent = `${pending.length} Requests`;
+  const c = document.getElementById('requestsReceivedList');
+  c.innerHTML = pending.length
+    ? pending.map(o => receivedRequestCardHTML(o)).join('')
+    : emptyState('fa-solid fa-arrow-right-arrow-left','No requests yet','Barter requests will appear here.');
+}
+
+function renderRequestsSent() {
+  const pending = sentOffers.filter(o => o.status === 'pending');
+  document.getElementById('sentCount').textContent = `${pending.length} Requests`;
+  const c = document.getElementById('requestsSentList');
+  c.innerHTML = pending.length
+    ? pending.map(o => sentRequestCardHTML(o)).join('')
+    : emptyState('fa-regular fa-paper-plane','No sent requests','Offers you send to other listings will appear here.');
 }
 
 function renderCompletedRequests() {
+  const all = [
+    ...receivedOffers.filter(o => o.status === 'accepted').map(o => ({o, dir:'received'})),
+    ...sentOffers.filter(o => o.status === 'accepted').map(o => ({o, dir:'sent'}))
+  ].sort((a,b) => new Date(b.o.created_at) - new Date(a.o.created_at));
+
   const c = document.getElementById('completedRequestsList');
-  c.innerHTML = completedBarters.length
-    ? completedBarters.map(r => requestCard(r)).join('')
+  c.innerHTML = all.length
+    ? all.map(x => x.dir === 'received' ? receivedRequestCardHTML(x.o) : sentRequestCardHTML(x.o)).join('')
     : emptyState('fa-solid fa-handshake','No completed barters','Accepted exchanges will appear here.');
 }
 
-function renderCancelledRequests() {
-  const c = document.getElementById('cancelledRequestsList');
-  c.innerHTML = cancelledBarters.length
-    ? cancelledBarters.map(r => requestCard(r)).join('')
-    : emptyState('fa-solid fa-ban','No cancelled requests','Declined or cancelled exchanges will appear here.');
+function renderRejectedRequests() {
+  const all = [
+    ...receivedOffers.filter(o => o.status === 'rejected').map(o => ({o, dir:'received'})),
+    ...sentOffers.filter(o => o.status === 'rejected').map(o => ({o, dir:'sent'}))
+  ].sort((a,b) => new Date(b.o.created_at) - new Date(a.o.created_at));
+
+  const c = document.getElementById('rejectedRequestsList');
+  c.innerHTML = all.length
+    ? all.map(x => x.dir === 'received' ? receivedRequestCardHTML(x.o) : sentRequestCardHTML(x.o)).join('')
+    : emptyState('fa-solid fa-ban','No rejected requests','Declined barter requests will appear here.');
 }
 
 // ════════════════════════════════════════════════════
@@ -1270,13 +1470,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyUserToUI(u);
 
   await loadMyPosts();
+  await loadReceivedOffers();
+  await loadSentOffers();
 
   // Check if redirected with a specific section (from index.html "List Item", etc.)
   const urlParams = new URLSearchParams(window.location.search);
   const sectionParam = urlParams.get('section');
   const validSections = ['dashHome','addListing','editListing','deleteListing',
-    'activeListings','pendingListings','requestsReceived','completedRequests',
-    'cancelledRequests','viewProfile','editProfile','changePassword'];
+    'activeListings','pendingListings','requestsReceived','requestsSent',
+    'rejectedRequests','completedRequests','viewProfile','editProfile','changePassword'];
   if (sectionParam && validSections.includes(sectionParam)) {
     navigate(sectionParam);
     return;

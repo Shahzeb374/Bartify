@@ -19,6 +19,14 @@ def _safe_filename(filename: str, index: int) -> str:
     return f"{index + 1}_{uuid.uuid4().hex}{suffix}"
 
 
+def _offer_status_label(status: int) -> str:
+    if status == 2:
+        return "accepted"
+    if status == 0:
+        return "rejected"
+    return "pending"
+
+
 # ═══ CREATE OFFER (post pr "Offer Exchange" click hone ke baad) ═══
 @router.post("/")
 async def create_offer(
@@ -132,6 +140,7 @@ def get_received_offers(
             "price_from": float(o.price_from) if o.price_from is not None else None,
             "price_to": float(o.price_to) if o.price_to is not None else None,
             "images": [img.image_url for img in o.images if img.status == 1],
+            "status": _offer_status_label(o.status),
             "offering_user": {
                 "name": o.offering_user.name if o.offering_user else "User",
                 "avatar": o.offering_user.user_image if o.offering_user else None
@@ -140,3 +149,81 @@ def get_received_offers(
         })
 
     return {"offers": result, "total": len(result)}
+
+
+# ═══ GET OFFERS I'VE SENT (dusron ki posts pr) ═══
+@router.get("/sent")
+def get_sent_offers(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    offers = db.query(models.Offer).options(
+        joinedload(models.Offer.post).joinedload(models.Post.images),
+        joinedload(models.Offer.post).joinedload(models.Post.user),
+        joinedload(models.Offer.category),
+        joinedload(models.Offer.images)
+    ).filter(models.Offer.offering_user_id == current_user.u_id) \
+     .order_by(models.Offer.created_at.desc()).all()
+
+    result = []
+    for o in offers:
+        target_post = o.post
+        target_images = [img.image_url for img in target_post.images if img.status == 1] if target_post else []
+        result.append({
+            "id": o.o_id,
+            "post_id": o.post_id,
+            "post_title": target_post.title if target_post else None,
+            "post_image": target_images[0] if target_images else None,
+            "post_owner_name": target_post.user.name if target_post and target_post.user else None,
+            "title": o.title,
+            "description": o.description,
+            "category": o.category.category if o.category else "General",
+            "condition_score": o.condition_score,
+            "price_from": float(o.price_from) if o.price_from is not None else None,
+            "price_to": float(o.price_to) if o.price_to is not None else None,
+            "images": [img.image_url for img in o.images if img.status == 1],
+            "status": _offer_status_label(o.status),
+            "created_at": o.created_at.isoformat() if o.created_at else None
+        })
+
+    return {"offers": result, "total": len(result)}
+
+
+# ═══ ACCEPT OFFER (sirf target post ka owner) ═══
+@router.put("/{offer_id}/accept")
+def accept_offer(
+    offer_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    offer = db.query(models.Offer).filter(models.Offer.o_id == offer_id).first()
+    if not offer:
+        raise HTTPException(status_code=404, detail="Offer not found")
+
+    target_post = db.query(models.Post).filter(models.Post.p_id == offer.post_id).first()
+    if not target_post or target_post.user_id != current_user.u_id:
+        raise HTTPException(status_code=403, detail="Not authorized to act on this offer")
+
+    offer.status = 2  # accepted
+    db.commit()
+    return {"message": "Offer accepted"}
+
+
+# ═══ REJECT OFFER (sirf target post ka owner) ═══
+@router.put("/{offer_id}/reject")
+def reject_offer(
+    offer_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    offer = db.query(models.Offer).filter(models.Offer.o_id == offer_id).first()
+    if not offer:
+        raise HTTPException(status_code=404, detail="Offer not found")
+
+    target_post = db.query(models.Post).filter(models.Post.p_id == offer.post_id).first()
+    if not target_post or target_post.user_id != current_user.u_id:
+        raise HTTPException(status_code=403, detail="Not authorized to act on this offer")
+
+    offer.status = 0  # rejected
+    db.commit()
+    return {"message": "Offer rejected"}

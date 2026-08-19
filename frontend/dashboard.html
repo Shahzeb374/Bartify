@@ -66,8 +66,9 @@
       </div>
       <div class="nav-sub open">
         <a href="#" data-section="requestsReceived"  onclick="navClick(this)">Barter Requests Received</a>
+        <a href="#" data-section="requestsSent"      onclick="navClick(this)">Barter Requests Sent</a>
+        <a href="#" data-section="rejectedRequests"  onclick="navClick(this)">Rejected Barter Requests</a>
         <a href="#" data-section="completedRequests" onclick="navClick(this)">Completed Barter Requests</a>
-        <a href="#" data-section="cancelledRequests" onclick="navClick(this)">Cancelled Barter Requests</a>
       </div>
     </div>
 
@@ -313,6 +314,29 @@
     <div id="requestsReceivedList"></div>
   </section>
 
+  <!-- ── REQUESTS SENT ── -->
+  <section id="sec-requestsSent" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Barter Requests Sent</div>
+        <div class="page-subtitle">Offers you've sent on other users' listings.</div>
+      </div>
+      <span class="count-badge" id="sentCount">0 Requests</span>
+    </div>
+    <div id="requestsSentList"></div>
+  </section>
+
+  <!-- ── REJECTED REQUESTS ── -->
+  <section id="sec-rejectedRequests" class="section">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Rejected Barter Requests</div>
+        <div class="page-subtitle">Requests that were declined, either way.</div>
+      </div>
+    </div>
+    <div id="rejectedRequestsList"></div>
+  </section>
+
   <!-- ── COMPLETED REQUESTS ── -->
   <section id="sec-completedRequests" class="section">
     <div class="page-header">
@@ -322,17 +346,6 @@
       </div>
     </div>
     <div id="completedRequestsList"></div>
-  </section>
-
-  <!-- ── CANCELLED REQUESTS ── -->
-  <section id="sec-cancelledRequests" class="section">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Cancelled Barter Requests</div>
-        <div class="page-subtitle">Declined or cancelled exchanges.</div>
-      </div>
-    </div>
-    <div id="cancelledRequestsList"></div>
   </section>
 
   <!-- ── VIEW PROFILE ── -->
