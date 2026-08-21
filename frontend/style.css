@@ -94,6 +94,35 @@ body { font-family:'Inter',sans-serif; background:#f0f4ff; color:#1a1a2e; }
 .btn-list-first { display:inline-block; background:linear-gradient(135deg,#1a56db,#3b82f6); color:#fff; font-family:'Inter',sans-serif; font-weight:600; font-size:.875rem; padding:10px 24px; border-radius:10px; text-decoration:none; box-shadow:0 2px 10px rgba(26,86,219,.25); transition:opacity .2s,transform .2s; }
 .btn-list-first:hover { opacity:.9; color:#fff; transform:translateY(-1px); }
 
+.btn-view-sm { background:#f0f4ff; color:#64748b; border:1.5px solid #dce8ff; border-radius:9px; padding:7px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; display:inline-flex; align-items:center; gap:6px; }
+.btn-view-sm:hover { background:#dce8ff; }
+.btn-delete-sm { background:#fef2f2; color:#ef4444; border:none; border-radius:9px; padding:7px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; display:inline-flex; align-items:center; gap:6px; }
+.btn-delete-sm:hover { background:#fee2e2; }
+
+/* ═══ LOGOUT MODAL ═══ */
+.logout-modal .modal-dialog { max-width:420px; }
+.logout-shell { border:none; border-radius:22px; overflow:hidden; box-shadow:0 28px 70px rgba(26,86,219,.18); }
+.logout-header { padding:18px 20px 16px; border:none; background:linear-gradient(135deg,#1a56db 0%,#2563eb 60%,#3b82f6 100%); color:#fff; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.logout-title-wrap { display:flex; align-items:center; gap:12px; min-width:0; }
+.logout-badge { width:42px; height:42px; border-radius:14px; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; flex-shrink:0; backdrop-filter:blur(8px); }
+.logout-badge i { font-size:18px; color:#fff; }
+.logout-header .modal-title { font-family:'Inter',sans-serif; font-weight:800; font-size:1.05rem; letter-spacing:-.2px; margin:0; }
+.logout-subtitle { font-size:.8rem; color:rgba(255,255,255,.82); margin:3px 0 0; line-height:1.4; }
+.logout-close { filter:brightness(0) invert(1); opacity:.9; box-shadow:none; }
+.logout-close:focus { box-shadow:none; }
+.logout-body { padding:22px 20px 20px; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
+.logout-icon-row { display:flex; align-items:flex-start; gap:14px; }
+.logout-icon { width:48px; height:48px; border-radius:16px; background:#fff7ed; color:#f59e0b; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 10px 24px rgba(245,158,11,.14); }
+.logout-icon i { font-size:20px; }
+.logout-copy { margin:3px 0 0; font-size:14px; color:#334155; line-height:1.6; }
+.logout-footer { border:none; padding:0 20px 20px; background:linear-gradient(180deg,#f8fbff 0%,#fff 100%); display:flex; gap:10px; justify-content:flex-end; }
+.logout-footer .btn-view-sm,
+.logout-footer .btn-delete-sm { min-width:112px; justify-content:center; }
+.logout-cancel { background:#fff; }
+.logout-cancel:hover { background:#eef4ff; }
+.logout-confirm { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; box-shadow:0 10px 24px rgba(220,38,38,.2); }
+.logout-confirm:hover { background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; }
+
 /* ═══ PRODUCT CARD ═══ */
 .product-card { background:#fff; border:1.5px solid #e8eef8; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; cursor:pointer; transition:transform .22s,box-shadow .22s,border-color .22s; }
 .product-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(26,86,219,.12); border-color:#b8ccf0; }

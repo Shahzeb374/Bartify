@@ -305,6 +305,7 @@ async function submitOffer(e) {
     return;
   }
 
+  const postId = document.getElementById('offerPostId').value;
   const title = document.getElementById('offerTitle').value.trim();
   const cat   = document.getElementById('offerCat').value;
   if (!title || !cat) { showToast('Please fill in Title and Category.', 'error'); return; }
@@ -342,6 +343,7 @@ async function submitOffer(e) {
     if (!res.ok) throw new Error(data?.detail || 'Failed to send offer');
 
     closeOfferModal();
+    openDetail(postId);
     showToast('Exchange offer sent! 🎉', 'success');
   } catch (err) {
     showToast(err.message || 'Could not send offer.', 'error');
@@ -458,6 +460,19 @@ function toggleDropdown() {
   document.getElementById('navDropdown').classList.toggle('show');
 }
 
+function confirmLogout() {
+  new bootstrap.Modal(document.getElementById('logoutModal')).show();
+}
+
+function doLogout() {
+  clearSession();
+  const modal = document.getElementById('logoutModal');
+  const instance = bootstrap.Modal.getInstance(modal);
+  if (instance) instance.hide();
+  showToast('Logged out. Redirecting…');
+  setTimeout(() => { window.location.href = 'index.html'; }, 1400);
+}
+
 document.addEventListener('click', function(e) {
   const wrap = document.querySelector('.nav-avatar-wrap');
   if (wrap && !wrap.contains(e.target)) {
@@ -472,8 +487,7 @@ document.addEventListener('click', function(e) {
 });
 
 function logoutUser() {
-  clearSession();
-  window.location.href = 'index.html';
+  confirmLogout();
 }
 
 /* ═══ TOAST ═══ */

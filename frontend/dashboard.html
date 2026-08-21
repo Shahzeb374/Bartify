@@ -68,7 +68,7 @@
         <a href="#" data-section="requestsReceived"  onclick="navClick(this)">Barter Requests Received</a>
         <a href="#" data-section="requestsSent"      onclick="navClick(this)">Barter Requests Sent</a>
         <a href="#" data-section="rejectedRequests"  onclick="navClick(this)">Rejected Barter Requests</a>
-        <a href="#" data-section="completedRequests" onclick="navClick(this)">Completed Barter Requests</a>
+        <a href="#" data-section="completedRequests" onclick="navClick(this)">Accepted Barter Requests</a>
       </div>
     </div>
 
@@ -127,11 +127,11 @@
       </div>
       <div class="stat-card" onclick="navigate('completedRequests')">
         <div class="stat-icon green"><i class="fa-solid fa-handshake"></i></div>
-        <div><div class="stat-count" id="statCompleted">0</div><div class="stat-label">Completed Barters</div></div>
+        <div><div class="stat-count" id="statCompleted">0</div><div class="stat-label">Accepted Barter Requests</div></div>
       </div>
       <div class="stat-card" onclick="navigate('requestsReceived')">
         <div class="stat-icon purple"><i class="fa-solid fa-bell"></i></div>
-        <div><div class="stat-count" id="statRequests">0</div><div class="stat-label">New Requests</div></div>
+        <div><div class="stat-count" id="statRequests">0</div><div class="stat-label">Barter Requests</div></div>
       </div>
     </div>
     <div class="dash-cols">
@@ -341,7 +341,7 @@
   <section id="sec-completedRequests" class="section">
     <div class="page-header">
       <div>
-        <div class="page-title">Completed Barter Requests</div>
+        <div class="page-title">Accepted Barter Requests</div>
         <div class="page-subtitle">Successfully completed exchanges.</div>
       </div>
     </div>
@@ -509,19 +509,28 @@
 </div>
 
 <!-- LOGOUT MODAL -->
-<div class="modal fade" id="logoutModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Confirm Logout</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal fade logout-modal" id="logoutModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered logout-dialog">
+    <div class="modal-content logout-shell">
+      <div class="modal-header logout-header">
+        <div class="logout-title-wrap">
+          <div class="logout-badge"><i class="fa-solid fa-right-from-bracket"></i></div>
+          <div>
+            <h5 class="modal-title">Confirm Logout</h5>
+            <p class="logout-subtitle">You’ll need to sign in again to continue using your dashboard.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close logout-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body py-4">
-        <p style="font-size:14px;color:var(--text-muted);margin:0;">Are you sure you want to log out of Bartify?</p>
+      <div class="modal-body logout-body">
+        <div class="logout-icon-row">
+          <div class="logout-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <p class="logout-copy">Are you sure you want to log out of Bartify?</p>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-view-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn-delete-sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      <div class="modal-footer logout-footer">
+        <button class="btn-view-sm logout-cancel" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-delete-sm logout-confirm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
   </div>

@@ -32,13 +32,7 @@ function saveUser(u) {
 }
 
 function getOrInitUser() {
-  let u = getUser();
-  if (!u.email) {
-    u = { firstName:'John', lastName:'Doe', email:'john@example.com',
-          phone:'+92 300 1234567', city:'Karachi', bio:'', avatar:null, name:'John Doe' };
-    saveUser(u);
-  }
-  return u;
+  return getUser();
 }
 
 // ════════════════════════════════════════════════════
@@ -197,7 +191,7 @@ function showSection(section) {
     requestsReceived:'Barter Requests Received',
     requestsSent:'Barter Requests Sent',
     rejectedRequests:'Rejected Barter Requests',
-    completedRequests:'Completed Barter Requests',
+    completedRequests:'Accepted Barter Requests',
     viewProfile:'My Profile',        editProfile:'Edit Profile',
     changePassword:'Change Password'
   };
@@ -335,7 +329,7 @@ function renderDashHome() {
       const status   = normStatus(p);
       const badgeCls = status === 'active' ? 'rb-active' : 'rb-pending';
       return `
-        <div class="recent-row" onclick="navigate('activeListings')">
+        <div class="recent-row" onclick="navigate('${status === 'pending' ? 'pendingListings' : 'activeListings'}')">
           ${imgEl}
           <div class="recent-info">
             <div class="recent-title">${esc(p.title)}</div>
@@ -348,21 +342,7 @@ function renderDashHome() {
 
   // Activity feed
   const actEl = document.getElementById('dashActivity');
-  const activities = [
-    { dot:'blue',  icon:'fa-plus',      text:'You listed <strong>Vintage Leather Armchair</strong>',  time:'2 days ago' },
-    { dot:'purple',icon:'fa-bell',      text:'<strong>Sara Ahmed</strong> sent you a barter request', time:'2 hours ago' },
-    { dot:'green', icon:'fa-handshake', text:'Exchange with <strong>Hina Malik</strong> completed',   time:'1 week ago' },
-    { dot:'amber', icon:'fa-pen',       text:'You updated <strong>Canon EOS 5D Mark III</strong>',    time:'3 days ago' },
-    { dot:'red',   icon:'fa-xmark',     text:'Request from <strong>Usman Khan</strong> declined',     time:'3 days ago' },
-  ];
-  actEl.innerHTML = activities.map(a => `
-    <div class="activity-row">
-      <div class="act-dot ${a.dot}"><i class="fa-solid ${a.icon}"></i></div>
-      <div>
-        <div class="act-text">${a.text}</div>
-        <div class="act-time">${a.time}</div>
-      </div>
-    </div>`).join('');
+  actEl.innerHTML = `<div class="empty-state">No recent activity yet.</div>`;
 }
 
 // ════════════════════════════════════════════════════
@@ -809,7 +789,7 @@ async function handleAcceptOffer(id) {
     closeDetail();
     await loadReceivedOffers();
     showToast('Barter request accepted! 🎉', 'success');
-    renderSection(currentSection);
+    navigate('completedRequests');
     renderDashHome();
   } catch(e) {
     showToast(e.message || 'Could not accept offer.', 'error');
@@ -1077,29 +1057,9 @@ function doLogout() {
 // ════════════════════════════════════════════════════
 // MESSAGES WIDGET
 // ════════════════════════════════════════════════════
-const DEMO_CONTACTS = [
-  { name:'Sara Ahmed', init:'S', preview:"I'd love to exchange!", unread:2 },
-  { name:'Ali Raza',   init:'A', preview:'Is the camera still available?', unread:1 },
-  { name:'Hina Malik', init:'H', preview:'Exchange completed ✓',  unread:0 },
-  { name:'Usman Khan', init:'U', preview:'No thanks, changed my mind.', unread:0 }
-];
-
-const DEMO_MSGS = {
-  'Sara Ahmed': [
-    { from:'them', text:"Hi! I'd love to exchange my gaming laptop for your armchair.", time:'10:34 AM' },
-    { from:'me',   text:'Hey Sara! Sure, what specs is the laptop?',                   time:'10:36 AM' },
-    { from:'them', text:"It's a Dell XPS 15, i7, 16GB RAM, 512GB SSD.",               time:'10:38 AM' },
-    { from:'me',   text:"That sounds fair! Let's arrange a meetup.",                   time:'10:40 AM' }
-  ],
-  'Ali Raza': [
-    { from:'them', text:'Is the Canon EOS 5D still available?', time:'Yesterday' },
-    { from:'me',   text:'Yes it is! Interested in trading?',    time:'Yesterday' }
-  ]
-};
-
 let activeContact = null;
-let allContacts   = [...DEMO_CONTACTS];
-let chatHistory   = { ...DEMO_MSGS };
+let allContacts   = [];
+let chatHistory   = {};
 
 function openMessages() {
   document.getElementById('msgOverlay').classList.add('show');
