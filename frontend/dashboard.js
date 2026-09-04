@@ -789,8 +789,15 @@ async function handleAcceptOffer(id) {
     closeDetail();
     await loadReceivedOffers();
     showToast('Barter request accepted! 🎉', 'success');
-    navigate('completedRequests');
     renderDashHome();
+
+    const offer = receivedOffers.find(o => String(o.id) === String(id));
+    if (offer && offer.offering_user && offer.offering_user.id) {
+      const prefill = `Hi! I've accepted your offer ("${offer.title}") for "${offer.post_title || 'my listing'}". Let's arrange the exchange!`;
+      openChatWith(offer.offering_user.id, prefill);
+    } else {
+      navigate('completedRequests');
+    }
   } catch(e) {
     showToast(e.message || 'Could not accept offer.', 'error');
   }
@@ -1046,6 +1053,7 @@ function confirmLogout() {
 }
 
 function doLogout() {
+  if (chatSocket) { chatSocket.onclose = null; chatSocket.close(); chatSocket = null; }
   localStorage.removeItem('barterToken');
   localStorage.removeItem('barterUser');
   localStorage.removeItem('bartifyUser');
@@ -1055,15 +1063,105 @@ function doLogout() {
 }
 
 // ════════════════════════════════════════════════════
-// MESSAGES WIDGET
+// MESSAGES WIDGET (real conversations + WebSocket live receive)
 // ════════════════════════════════════════════════════
-let activeContact = null;
-let allContacts   = [];
-let chatHistory   = {};
+let activeConversationId = null;
+let conversations        = [];
+let chatSocket            = null;
+
+function formatMsgTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
+}
+
+async function loadConversations() {
+  const token = localStorage.getItem('barterToken');
+  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/messages/conversations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    conversations = (data.conversations || []).map(c => {
+      if (c.other_user?.avatar?.startsWith('/uploads/')) {
+        c.other_user.avatar = `${API_BASE_URL}${c.other_user.avatar}`;
+      }
+      return c;
+    });
+    updateNotificationBadges();
+    if (document.getElementById('msgOverlay')?.classList.contains('show') && !activeConversationId) {
+      renderContactsList(conversations);
+    }
+  } catch(e) {
+    console.error('Could not load conversations:', e);
+  }
+}
+
+function updateNotificationBadges() {
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+  const msgBadge = document.getElementById('msgBtnBadge');
+  if (msgBadge) {
+    msgBadge.textContent  = totalUnread > 9 ? '9+' : totalUnread;
+    msgBadge.style.display = totalUnread > 0 ? 'inline-flex' : 'none';
+  }
+
+  const pendingReq = receivedOffers.filter(o => o.status === 'pending').length;
+  const reqBadge = document.getElementById('requestsNavBadge');
+  if (reqBadge) {
+    reqBadge.textContent  = pendingReq > 9 ? '9+' : pendingReq;
+    reqBadge.style.display = pendingReq > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+// ═══ WEBSOCKET — sirf live receive ke liye ═══
+function connectMessagesSocket() {
+  const token = localStorage.getItem('barterToken');
+  if (!token) return;
+  if (chatSocket && (chatSocket.readyState === WebSocket.OPEN || chatSocket.readyState === WebSocket.CONNECTING)) return;
+
+  const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + `/messages/ws?token=${encodeURIComponent(token)}`;
+  chatSocket = new WebSocket(wsUrl);
+
+  chatSocket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'new_message') handleIncomingMessage(data.conversation_id, data.message);
+    } catch(e) { /* ignore malformed frame */ }
+  };
+
+  chatSocket.onclose = () => {
+    // Thodi der baad reconnect try karo, agar abhi bhi logged in hain
+    setTimeout(() => { if (localStorage.getItem('barterToken')) connectMessagesSocket(); }, 3000);
+  };
+}
+
+function handleIncomingMessage(conversationId, message) {
+  let convo = conversations.find(c => c.id === conversationId);
+
+  if (activeConversationId === conversationId && document.getElementById('msgOverlay')?.classList.contains('show')) {
+    // Isi waqt yehi chat khuli hai — turant bubble add karo, unread mat badhao
+    appendMessageBubble(message, false);
+    if (convo) { convo.last_message = message.content; convo.last_message_at = message.created_at; }
+  } else {
+    // Kisi aur conversation ka ya widget band hai — unread count badhao
+    if (convo) {
+      convo.unread_count   = (convo.unread_count || 0) + 1;
+      convo.last_message   = message.content;
+      convo.last_message_at = message.created_at;
+    }
+    showToast('New message received', '');
+  }
+  updateNotificationBadges();
+  if (document.getElementById('msgOverlay')?.classList.contains('show') && !activeConversationId) {
+    renderContactsList(conversations);
+  }
+}
 
 function openMessages() {
   document.getElementById('msgOverlay').classList.add('show');
-  renderContactsList(allContacts);
+  loadConversations();
   showContactsList();
 }
 
@@ -1075,25 +1173,30 @@ function msgOverlayClick(e) {
   if (e.target === document.getElementById('msgOverlay')) closeMessages();
 }
 
-function renderContactsList(contacts) {
+function renderContactsList(list) {
   const el = document.getElementById('msgContactsList');
-  if (!contacts.length) {
+  if (!list.length) {
     el.innerHTML = `<div style="padding:24px;text-align:center;font-size:13px;color:var(--text-muted);">No conversations yet.</div>`;
     return;
   }
-  el.innerHTML = contacts.map(c => `
-    <div class="msg-contact" onclick="openChat('${c.name}','${c.init}')">
-      <div class="msg-contact-av">${c.init}</div>
+  el.innerHTML = list.map(c => {
+    const name = (c.other_user && c.other_user.name) || 'Bartify User';
+    const init = name.charAt(0).toUpperCase();
+    return `
+    <div class="msg-contact" onclick="openChat(${c.id})">
+      <div class="msg-contact-av">${init}</div>
       <div style="flex:1;min-width:0;">
-        <div class="msg-contact-name">${esc(c.name)}</div>
-        <div class="msg-contact-preview">${esc(c.preview)}</div>
+        <div class="msg-contact-name">${esc(name)}</div>
+        <div class="msg-contact-preview">${esc(c.last_message || 'Say hi 👋')}</div>
       </div>
-      ${c.unread ? `<span class="msg-unread">${c.unread}</span>` : ''}
-    </div>`).join('');
+      ${c.unread_count ? `<span class="msg-unread">${c.unread_count}</span>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function filterContacts(q) {
-  const filtered = allContacts.filter(c => c.name.toLowerCase().includes(q.toLowerCase()));
+  const query = q.toLowerCase();
+  const filtered = conversations.filter(c => ((c.other_user && c.other_user.name) || '').toLowerCase().includes(query));
   renderContactsList(filtered);
 }
 
@@ -1104,59 +1207,122 @@ function showContactsList() {
   cp.style.flex = '1';
   cp.style.overflow = 'hidden';
   document.getElementById('msgChatPanel').classList.remove('show');
-  activeContact = null;
+  activeConversationId = null;
+  renderContactsList(conversations);
 }
 
-function openChatWith(name, init) {
+// ═══ Kisi specific user ke sath chat kholna (Accept flow yahi call karta hai) ═══
+async function openChatWith(userId, prefillMessage) {
   openMessages();
-  setTimeout(() => openChat(name, init), 60);
+  const token = localStorage.getItem('barterToken');
+  try {
+    const res = await fetch(`${API_BASE_URL}/messages/conversations/with/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Could not open conversation');
+    const data = await res.json();
+
+    if (!conversations.find(c => c.id === data.id)) {
+      conversations.unshift({ id: data.id, other_user: data.other_user, last_message:'', last_message_at:null, unread_count:0 });
+    }
+    await openChat(data.id);
+    if (prefillMessage) {
+      const input = document.getElementById('chatInput');
+      input.value = prefillMessage;
+      input.focus();
+    }
+  } catch(e) {
+    showToast(e.message || 'Could not open chat.', 'error');
+  }
 }
 
-function openChat(name, init) {
-  activeContact = name;
-  document.getElementById('chatPartnerName').textContent = name;
-  document.getElementById('chatPartnerAv').textContent   = init;
+async function openChat(conversationId) {
+  activeConversationId = conversationId;
+  const convo = conversations.find(c => c.id === conversationId);
+  const name  = (convo && convo.other_user && convo.other_user.name) || 'User';
 
-  // Mark as read
-  const c = allContacts.find(x => x.name === name);
-  if (c) c.unread = 0;
+  document.getElementById('chatPartnerName').textContent = name;
+  document.getElementById('chatPartnerAv').textContent   = name.charAt(0).toUpperCase();
 
   document.getElementById('msgContactsPanel').style.display = 'none';
   document.getElementById('msgChatPanel').classList.add('show');
+  document.getElementById('chatMessages').innerHTML = '';
 
-  renderChatMessages(name);
-  setTimeout(() => {
-    const msgs = document.getElementById('chatMessages');
-    msgs.scrollTop = msgs.scrollHeight;
-  }, 50);
-}
+  const token = localStorage.getItem('barterToken');
+  try {
+    const res = await fetch(`${API_BASE_URL}/messages/conversations/${conversationId}/messages`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    renderChatMessages(data.messages || []);
+  } catch(e) {
+    console.error('Could not load messages:', e);
+  }
 
-function renderChatMessages(name) {
-  const msgs = chatHistory[name] || [];
-  const el   = document.getElementById('chatMessages');
-  el.innerHTML = msgs.map(m => `
-    <div>
-      <div class="msg-bubble ${m.from}">${esc(m.text)}</div>
-      <div class="msg-bubble-time" style="text-align:${m.from==='me'?'right':'left'}">${m.time}</div>
-    </div>`).join('');
-}
-
-function sendMessage() {
-  const input = document.getElementById('chatInput');
-  const text  = input.value.trim();
-  if (!text || !activeContact) return;
-
-  if (!chatHistory[activeContact]) chatHistory[activeContact] = [];
-  chatHistory[activeContact].push({ from:'me', text, time:'Just now' });
-  renderChatMessages(activeContact);
-  input.value = '';
+  if (convo) convo.unread_count = 0;
+  updateNotificationBadges();
 
   const msgs = document.getElementById('chatMessages');
   setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+}
 
-  // Update preview
-  const c = allContacts.find(x => x.name === activeContact);
-  if (c) c.preview = text;
+function myUserId() {
+  const u = getUser();
+  return u && u.id;
+}
+
+function renderChatMessages(list) {
+  const myId = myUserId();
+  const el = document.getElementById('chatMessages');
+  el.innerHTML = list.map(m => {
+    const mine = String(m.sender_id) === String(myId);
+    return `
+    <div>
+      <div class="msg-bubble ${mine ? 'me' : 'them'}">${esc(m.content)}</div>
+      <div class="msg-bubble-time" style="text-align:${mine?'right':'left'}">${formatMsgTime(m.created_at)}</div>
+    </div>`;
+  }).join('');
+}
+
+function appendMessageBubble(message, isMine) {
+  const myId = myUserId();
+  const mine = isMine || String(message.sender_id) === String(myId);
+  const el = document.getElementById('chatMessages');
+  el.insertAdjacentHTML('beforeend', `
+    <div>
+      <div class="msg-bubble ${mine ? 'me' : 'them'}">${esc(message.content)}</div>
+      <div class="msg-bubble-time" style="text-align:${mine?'right':'left'}">${formatMsgTime(message.created_at)}</div>
+    </div>`);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text || !activeConversationId) return;
+
+  input.value = '';
+  const token = localStorage.getItem('barterToken');
+  const formData = new FormData();
+  formData.append('content', text);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/messages/conversations/${activeConversationId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    if (!res.ok) throw new Error('Failed to send');
+    const data = await res.json();
+
+    appendMessageBubble(data.message, true);
+
+    const convo = conversations.find(c => c.id === activeConversationId);
+    if (convo) { convo.last_message = text; convo.last_message_at = data.message.created_at; }
+  } catch(e) {
+    showToast('Could not send message.', 'error');
+    input.value = text; // wapis daal do taake user retry kar sake
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -1432,6 +1598,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadMyPosts();
   await loadReceivedOffers();
   await loadSentOffers();
+  await loadConversations();
+  updateNotificationBadges();
+  connectMessagesSocket();
 
   // Check if redirected with a specific section (from index.html "List Item", etc.)
   const urlParams = new URLSearchParams(window.location.search);
