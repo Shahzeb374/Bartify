@@ -37,8 +37,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)):
-    """Logged in ho to User return karo, warna None — kabhi error nahi deta (guests ke liye)."""
+def get_user_from_token(token: str, db: Session):
+    """Raw token string se User nikalta hai — WebSocket auth ke liye (jahan headers use nahi ho sakte,
+    query param se token aata hai). Invalid/missing token pr None, kabhi exception nahi."""
     if not token:
         return None
     try:
@@ -50,3 +51,8 @@ def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: 
         return None
 
     return db.query(models.User).filter(models.User.u_id == user_id).first()
+
+
+def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)):
+    """Logged in ho to User return karo, warna None — kabhi error nahi deta (guests ke liye)."""
+    return get_user_from_token(token, db)

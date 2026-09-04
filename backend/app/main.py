@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app import models
-from app.routes import users, posts, offers
+from app.routes import users, posts, offers, messages
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -34,6 +34,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(posts.router, prefix="/posts", tags=["Posts"])
 app.include_router(offers.router, prefix="/offers", tags=["Offers"])
+app.include_router(messages.router, prefix="/messages", tags=["Messages"])
 
 # Test route
 @app.get("/")

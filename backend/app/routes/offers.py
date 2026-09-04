@@ -142,6 +142,7 @@ def get_received_offers(
             "images": [img.image_url for img in o.images if img.status == 1],
             "status": _offer_status_label(o.status),
             "offering_user": {
+                "id": o.offering_user.u_id if o.offering_user else None,
                 "name": o.offering_user.name if o.offering_user else "User",
                 "avatar": o.offering_user.user_image if o.offering_user else None
             },
@@ -174,6 +175,7 @@ def get_sent_offers(
             "post_id": o.post_id,
             "post_title": target_post.title if target_post else None,
             "post_image": target_images[0] if target_images else None,
+            "post_owner_id": target_post.user.u_id if target_post and target_post.user else None,
             "post_owner_name": target_post.user.name if target_post and target_post.user else None,
             "title": o.title,
             "description": o.description,

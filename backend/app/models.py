@@ -120,3 +120,37 @@ class OfferImage(Base):
     status = Column(Integer, default=1)
 
     offer = relationship("Offer", back_populates="images")
+
+
+#CONVERSATIONS  (do users ke beech ek hi thread — WhatsApp jaisa)
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    c_id = Column(Integer, primary_key=True, index=True)
+
+    user_a_id = Column(Integer, ForeignKey("users.u_id", ondelete="CASCADE"), nullable=False)
+    user_b_id = Column(Integer, ForeignKey("users.u_id", ondelete="CASCADE"), nullable=False)
+
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    last_message_at = Column(TIMESTAMP, server_default=func.now())
+
+    user_a = relationship("User", foreign_keys=[user_a_id])
+    user_b = relationship("User", foreign_keys=[user_b_id])
+    messages = relationship("Message", back_populates="conversation", cascade="all, delete", order_by="Message.created_at")
+
+
+#MESSAGES
+class Message(Base):
+    __tablename__ = "messages"
+
+    m_id = Column(Integer, primary_key=True, index=True)
+
+    conversation_id = Column(Integer, ForeignKey("conversations.c_id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.u_id", ondelete="CASCADE"), nullable=False)
+
+    content = Column(Text, nullable=False)
+    is_read = Column(Integer, default=0)  # sirf unread-count ke liye, "seen" dikhane ke liye nahi
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    conversation = relationship("Conversation", back_populates="messages")
+    sender = relationship("User")
