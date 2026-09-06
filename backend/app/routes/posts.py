@@ -12,6 +12,22 @@ router = APIRouter()
 
 UPLOAD_ROOT = Path("uploads") / "posts"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+MIN_DESCRIPTION_WORDS = 16
+MAX_DESCRIPTION_WORDS = 34
+
+
+def _validate_description(description: str) -> str:
+    cleaned = description.strip()
+    word_count = len(cleaned.split())
+    if word_count < MIN_DESCRIPTION_WORDS or word_count > MAX_DESCRIPTION_WORDS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Description must contain {MIN_DESCRIPTION_WORDS} to "
+                f"{MAX_DESCRIPTION_WORDS} words. You entered {word_count}."
+            )
+        )
+    return cleaned
 
 
 def _safe_filename(filename: str, index: int) -> str:
@@ -168,7 +184,8 @@ async def update_post(
 
     # Update text fields
     if title:              post.title          = title.strip()
-    if description:        post.description    = description.strip()
+    if description is not None:
+        post.description = _validate_description(description)
     if in_exchange_for is not None: post.in_exchange_for = in_exchange_for.strip()
     if price_from is not None:      post.price_from      = price_from
     if price_to   is not None:      post.price_to        = price_to
@@ -264,6 +281,7 @@ async def create_post(
     if price_from > price_to:
         raise HTTPException(status_code=400, detail="Invalid price range")
 
+    description = _validate_description(description)
     category_name = category.strip()
     if not category_name:
         raise HTTPException(status_code=400, detail="Category is required")

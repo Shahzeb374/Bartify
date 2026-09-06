@@ -1471,6 +1471,14 @@ async function publishListing(e) {
   const cat   = document.getElementById('itemCat').value;
   if (!title || !cat) { showToast('Please fill in Title and Category.','error'); return; }
 
+  const description = document.getElementById('itemDesc').value.trim();
+  const descriptionWords = description ? description.split(/\s+/).length : 0;
+  if (descriptionWords < 16 || descriptionWords > 34) {
+    showToast(`Description must contain 16 to 34 words. You entered ${descriptionWords}.`, 'error');
+    document.getElementById('itemDesc').focus();
+    return;
+  }
+
   const token = localStorage.getItem('barterToken');
   if (!token) { showToast('Please log in again before publishing.', 'error'); return; }
 
@@ -1481,7 +1489,7 @@ async function publishListing(e) {
 
   const formData = new FormData();
   formData.append('title',            title);
-  formData.append('description',      document.getElementById('itemDesc').value.trim());
+  formData.append('description',      description);
   formData.append('in_exchange_for',  tradeVal);
   formData.append('category',         cat);
   formData.append('price_from',       String(fromVal));
