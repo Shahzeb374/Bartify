@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Num
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.post_status import PENDING
 
 
 #ROLES
@@ -62,7 +63,7 @@ class Post(Base):
     price_to = Column(Numeric, nullable=False)
     condition_score = Column(Integer, nullable=False)
 
-    status = Column(Integer, default=1)
+    status = Column(Integer, default=PENDING)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
     user = relationship("User", back_populates="posts")
@@ -154,3 +155,28 @@ class Message(Base):
 
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User")
+
+
+class PostModeration(Base):
+    __tablename__ = "post_moderation"
+
+    post_id = Column(Integer, ForeignKey("posts.p_id", ondelete="CASCADE"), primary_key=True)
+    revision = Column(String(64), nullable=False)
+    label = Column(String(20), nullable=False)  # clean, issue, unavailable
+    confidence = Column(Numeric, nullable=True)
+    model_version = Column(String(140), nullable=True)
+    checked_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+
+class ModerationDecision(Base):
+    __tablename__ = "moderation_decisions"
+
+    id = Column(Integer, primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.p_id", ondelete="SET NULL"), nullable=True)
+    post_title = Column(String(255), nullable=False)
+    admin_id = Column(Integer, ForeignKey("users.u_id", ondelete="SET NULL"), nullable=True)
+    admin_name = Column(String(100), nullable=False)
+    decision = Column(String(20), nullable=False)
+    model_label = Column(String(20), nullable=False)
+    revision = Column(String(64), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())

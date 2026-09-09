@@ -520,7 +520,14 @@ window.fetch = function(...args) {
   });
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const user = await BartifySession.resolve({memberOnly: true, optional: true});
+    if (!user && localStorage.getItem('barterToken')) return;
+  } catch (err) {
+    showToast(err.message, 'error');
+    return;
+  }
   checkLoginState();
   renderProducts();
 

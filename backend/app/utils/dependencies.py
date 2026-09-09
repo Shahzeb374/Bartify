@@ -33,6 +33,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.u_id == user_id).first()
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
+    if user.status != 1:
+        raise HTTPException(status_code=403, detail="Account is inactive")
     
     return user
 
@@ -50,9 +52,15 @@ def get_user_from_token(token: str, db: Session):
     except JWTError:
         return None
 
-    return db.query(models.User).filter(models.User.u_id == user_id).first()
+    return db.query(models.User).filter(models.User.u_id == user_id, models.User.status == 1).first()
 
 
 def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)):
     """Logged in ho to User return karo, warna None — kabhi error nahi deta (guests ke liye)."""
     return get_user_from_token(token, db)
+
+
+def get_current_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role_id != 2:
+        raise HTTPException(status_code=403, detail="Administrator access required")
+    return current_user

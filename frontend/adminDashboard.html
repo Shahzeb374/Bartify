@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bartify Admin Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<link rel="stylesheet" href="adminDashboard.css" />
+</head>
+<body class="admin-auth-pending"><div id="adminAccessState" role="status">Checking administrator access… <button type="button" onclick="location.reload()">Retry</button></div>
+
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="brand-avatar">B</div>
+          <div class="brand-text">
+            <span class="brand-name">Bartify</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </div>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <button class="btn-new-report btn-new-report-top" id="refreshOverviewBtn" type="button" title="Refresh dashboard overview">
+        <i data-lucide="plus"></i>
+        <span>New Report</span>
+      </button>
+
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#" class="nav-item active" data-nav="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="users">
+          <i data-lucide="users"></i>
+          <span>Users</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="listings">
+          <i data-lucide="list"></i>
+          <span>Listings</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="reports">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Reports</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="exchanges">
+          <i data-lucide="repeat"></i>
+          <span>Exchanges</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="analytics">
+          <i data-lucide="trending-up"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="settings">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a href="#" class="logout-link">
+          <i data-lucide="log-out"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- HEADER -->
+      <header class="header">
+        <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="search-box">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search..." aria-label="Search verification table" />
+        </div>
+
+        <div class="header-right">
+          <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notif-dot"></span>
+          </button>
+          <button class="icon-btn" id="helpBtn" aria-label="Help">
+            <i data-lucide="help-circle"></i>
+          </button>
+          <span class="v-divider" aria-hidden="true"></span>
+          <span class="admin-name" id="adminName"></span>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <main class="content">
+
+      <!-- ============ DASHBOARD PAGE ============ -->
+      <div class="page" id="page-dashboard">
+        <div class="page-title">
+          <h1>Dashboard Overview</h1>
+          <p>Review model results and decide which posts can appear in the marketplace.</p><p id="overviewStatus" role="status" aria-live="polite"></p>
+        </div>
+
+        <!-- STAT CARDS -->
+        <section class="stats-grid" aria-label="Key statistics">
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-icon"><i data-lucide="users"></i></div>
+              
+            </div>
+            <div class="stat-label">TOTAL USERS</div>
+            <div class="stat-value" id="overviewUsers">—</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-icon"><i data-lucide="clipboard-list"></i></div>
+              
+            </div>
+            <div class="stat-label">TOTAL LISTINGS</div>
+            <div class="stat-value" id="overviewListings">—</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-icon"><i data-lucide="arrow-left-right"></i></div>
+              
+            </div>
+            <div class="stat-label">ACCEPTED OFFERS</div>
+            <div class="stat-value" id="overviewOffers">—</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-icon stat-icon-red"><i data-lucide="flag"></i></div>
+              
+            </div>
+            <div class="stat-label">ISSUES IN QUEUE</div>
+            <div class="stat-value" id="overviewIssues">—</div>
+          </div>
+        </section>
+
+        <!-- LOWER GRID -->
+        <section class="lower-grid">
+
+          <!-- PENDING VERIFICATION -->
+          <div class="card pending-card">
+            <div class="card-header">
+              <h2>Pending Verification <span id="pendingQueueCount"></span></h2>
+              <a href="#" class="view-all" id="viewAllLink">View All</a>
+            </div>
+
+            <div class="table-scroll">
+              <table class="verify-table">
+                <thead>
+                  <tr>
+                    <th>LISTING</th>
+                    <th>USER</th>
+                    <th>CATEGORY</th>
+                    <th>CONFIDENCE</th>
+                    <th>MODEL RESULT</th>
+                    <th class="th-action">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="verifyTableBody"></tbody>
+              </table>
+              <p class="no-results" id="noResults" hidden>No posts are waiting for review.</p><div class="queue-pagination"><button id="queuePrev" class="btn-outline" disabled>Previous</button><span id="queuePage" aria-live="polite"></span><button id="queueNext" class="btn-outline" disabled>Next</button></div>
+            </div>
+          </div>
+
+          <!-- RECENT ACTIVITY -->
+          <div class="card activity-card">
+            <div class="card-header">
+              <h2>Recent Activity</h2>
+            </div>
+
+            <ul class="activity-list" id="moderationActivity"><li>No review decisions yet.</li></ul>
+          </div>
+
+        </section>
+      </div>
+      <!-- ============ END DASHBOARD PAGE ============ -->
+
+
+      <div class="page" id="page-users" hidden>
+        <div class="page-title"><h1>User Management</h1><p>View accounts and manage member access.</p></div>
+        <section class="card">
+          <div class="card-header admin-toolbar">
+            <label>Filter <select id="usersFilter" class="admin-select"><option value="all">All users</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
+            <button class="btn-outline" data-reload="users" type="button">Refresh</button>
+            
+          </div>
+          <p id="usersStatus" class="admin-section-status" role="status"></p>
+          <div class="table-wrap"><table class="admin-data-table"><thead id="usersHead"></thead><tbody id="usersRows"></tbody></table></div>
+          <div class="queue-pagination"><button class="btn-outline" id="usersPrev" type="button" disabled>Previous</button><span id="usersPage" aria-live="polite"></span><button class="btn-outline" id="usersNext" type="button" disabled>Next</button></div>
+        </section>
+      </div>
+
+      <div class="page" id="page-listings" hidden>
+        <div class="page-title"><h1>Listings & Verification</h1><p>All platform listings with their current moderation status.</p></div>
+        <section class="card">
+          <div class="card-header admin-toolbar">
+            <label>Filter <select id="listingsFilter" class="admin-select"><option value="all">All listings</option><option value="pending">Pending</option><option value="active">Active</option><option value="rejected">Rejected</option><option value="issue">Model flagged</option></select></label>
+            <button class="btn-outline" data-reload="listings" type="button">Refresh</button>
+            
+          </div>
+          <p id="listingsStatus" class="admin-section-status" role="status"></p>
+          <div class="table-wrap"><table class="admin-data-table"><thead id="listingsHead"></thead><tbody id="listingsRows"></tbody></table></div>
+          <div class="queue-pagination"><button class="btn-outline" id="listingsPrev" type="button" disabled>Previous</button><span id="listingsPage" aria-live="polite"></span><button class="btn-outline" id="listingsNext" type="button" disabled>Next</button></div>
+        </section>
+      </div>
+
+      <div class="page" id="page-reports" hidden>
+        <div class="page-title"><h1>Reports & Flagged Content</h1><p>Model-flagged pending posts and recorded admin decisions. User-submitted reports are not available yet.</p></div>
+        <section class="card">
+          <div class="card-header admin-toolbar">
+            <label>Filter <select id="reportsFilter" class="admin-select"><option value="pending">Model flagged</option><option value="resolved">Review history</option></select></label>
+            <button class="btn-outline" data-reload="reports" type="button">Refresh</button>
+            
+          </div>
+          <p id="reportsStatus" class="admin-section-status" role="status"></p>
+          <div class="table-wrap"><table class="admin-data-table"><thead id="reportsHead"></thead><tbody id="reportsRows"></tbody></table></div>
+          <div class="queue-pagination"><button class="btn-outline" id="reportsPrev" type="button" disabled>Previous</button><span id="reportsPage" aria-live="polite"></span><button class="btn-outline" id="reportsNext" type="button" disabled>Next</button></div>
+        </section>
+      </div>
+
+      <div class="page" id="page-exchanges" hidden>
+        <div class="page-title"><h1>Exchange Management</h1><p>View actual barter offers. Accepted offers do not confirm a completed exchange.</p></div>
+        <section class="card">
+          <div class="card-header admin-toolbar">
+            <label>Filter <select id="exchangesFilter" class="admin-select"><option value="all">All exchanges</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select></label>
+            <button class="btn-outline" data-reload="exchanges" type="button">Refresh</button>
+            <button class="btn-outline" id="exchangesExportBtn" type="button">Export CSV</button>
+          </div>
+          <p id="exchangesStatus" class="admin-section-status" role="status"></p>
+          <div class="table-wrap"><table class="admin-data-table"><thead id="exchangesHead"></thead><tbody id="exchangesRows"></tbody></table></div>
+          <div class="queue-pagination"><button class="btn-outline" id="exchangesPrev" type="button" disabled>Previous</button><span id="exchangesPage" aria-live="polite"></span><button class="btn-outline" id="exchangesNext" type="button" disabled>Next</button></div>
+        </section>
+      </div>
+      <div class="page" id="page-analytics" hidden>
+        <div class="page-title"><h1>System Reports</h1><p>Current database totals and offer activity over the last six months.</p></div>
+        <button class="btn-outline" data-reload="analytics" type="button">Refresh statistics</button>
+        <p id="analyticsStatus" class="admin-section-status" role="status"></p>
+        <section id="analyticsStats" class="stats-grid"></section>
+        <section class="lower-grid">
+          <div class="card"><div class="card-header"><h2>Exchange Activity</h2></div><div id="analyticsChart" class="admin-chart"></div></div>
+          <div class="card"><div class="card-header"><h2>Listing Categories</h2></div><div id="analyticsCategories" class="admin-category-list"></div></div>
+        </section>
+      </div>
+      <div class="page" id="page-settings" hidden>
+        <div class="page-title"><h1>Settings</h1><p>Update your admin profile and login password.</p></div>
+        <p id="settingsStatus" class="admin-section-status" role="status"></p>
+        <div class="settings-stack">
+          <form class="card" id="adminProfileForm">
+            <div class="settings-card-header"><h2>Admin Profile</h2></div>
+            <div class="settings-card-body">
+              <div class="form-grid-2">
+                <div class="form-field"><label for="fullNameInput">Full name</label><input id="fullNameInput" required maxlength="100" autocomplete="name"></div>
+                <div class="form-field"><label for="emailInput">Email address</label><input id="emailInput" type="email" required maxlength="100" autocomplete="email"></div>
+              </div>
+              <div class="form-field"><label for="profilePassword">Current password to confirm changes</label><input id="profilePassword" type="password" required autocomplete="current-password"></div>
+              <button class="btn-save" type="submit">Save Profile</button>
+              <p id="profileStatus" role="status"></p>
+            </div>
+          </form>
+          <form class="card" id="adminPasswordForm">
+            <div class="settings-card-header"><h2>Change Password</h2></div>
+            <div class="settings-card-body">
+              <div class="form-field"><label for="currentPasswordInput">Current password</label><input id="currentPasswordInput" type="password" required autocomplete="current-password"></div>
+              <div class="form-field"><label for="newPasswordInput">New password</label><input id="newPasswordInput" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></div>
+              <p>Use at least 8 characters with uppercase, lowercase, a number, and a special character.</p>
+              <div class="form-field"><label for="confirmPasswordInput">Confirm new password</label><input id="confirmPasswordInput" type="password" required autocomplete="new-password"></div>
+              <button class="btn-save" type="submit">Change Password</button>
+              <p id="passwordStatus" role="status"></p>
+            </div>
+          </form>
+          <p class="review-help">Two-factor authentication and email notification preferences will be available when those services are connected.</p>
+        </div>
+      </div>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="adminDetailDialog" class="moderation-dialog" aria-labelledby="adminDetailTitle">
+    <div class="modal-header"><h3 id="adminDetailTitle">Details</h3><button type="button" id="closeAdminDetail" class="modal-close" aria-label="Close details">&times;</button></div>
+    <div class="modal-body"><div id="adminDetailBody"></div><p id="adminDetailStatus" role="status"></p><div id="adminDetailActions" class="review-actions"></div></div>
+  </dialog>
+  <dialog id="moderationDialog" class="moderation-dialog" aria-labelledby="reviewTitle">
+    <div class="modal-header"><h3 id="reviewTitle">Review post</h3><button type="button" id="closeReview" class="modal-close" aria-label="Close review">×</button></div>
+    <div class="modal-body">
+      <p id="reviewMeta"></p>
+      <p id="reviewPrediction" class="review-prediction"></p>
+      <p class="review-help">The model checks text only. Review the listing and its images before making your decision.</p>
+      <div id="reviewImages" class="review-images"></div>
+      <h4>Description</h4><p id="reviewDescription" class="review-copy"></p>
+      <h4>Preferred trade</h4><p id="reviewTrade" class="review-copy"></p>
+      <p id="reviewValue"></p>
+      <p id="reviewStatus" role="status" aria-live="polite"></p>
+      <div class="review-actions"><button type="button" class="btn-save" id="approvePost">Approve &amp; publish</button><button type="button" class="btn-outline reject-post" id="rejectPost">Reject post</button></div>
+    </div>
+  </dialog>
+  <script src="session.js"></script>
+  <script src="adminDashboard.js" defer></script>
+</body>
+</html>

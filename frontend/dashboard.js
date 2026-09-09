@@ -329,7 +329,7 @@ function renderDashHome() {
       const status   = normStatus(p);
       const badgeCls = status === 'active' ? 'rb-active' : 'rb-pending';
       return `
-        <div class="recent-row" onclick="navigate('${status === 'pending' ? 'pendingListings' : 'activeListings'}')">
+        <div class="recent-row" onclick="navigate('${status === 'pending' || status === 'rejected' ? 'pendingListings' : 'activeListings'}')">
           ${imgEl}
           <div class="recent-info">
             <div class="recent-title">${esc(p.title)}</div>
@@ -350,7 +350,7 @@ function renderDashHome() {
 // ════════════════════════════════════════════════════
 function renderEditList() {
   const c = document.getElementById('editListingList');
-  const editable = myPosts.filter(p => normStatus(p) === 'active');
+  const editable = myPosts.filter(p => normStatus(p) !== 'pending');
   if (!editable.length) {
     c.innerHTML = emptyState('fa-solid fa-pen-to-square','No listings to edit','Approved listings will appear here for editing.',
       `<a href="#" onclick="navigate('addListing');return false;" class="btn-primary-sm" style="margin:0 auto;"><i class="fa-solid fa-plus"></i> Add Listing</a>`);
@@ -567,8 +567,8 @@ function renderActiveListings() {
 // PENDING LISTINGS
 // ════════════════════════════════════════════════════
 function renderPendingListings() {
-  const pending = myPosts.filter(p => normStatus(p) === 'pending');
-  document.getElementById('pendingCount').textContent = `${pending.length} Pending`;
+  const pending = myPosts.filter(p => normStatus(p) !== 'active');
+  document.getElementById('pendingCount').textContent = `${pending.length} Under Review / Rejected`;
   const c = document.getElementById('pendingListingsList');
   if (!pending.length) {
     c.innerHTML = emptyState('fa-regular fa-clock','No pending listings','Newly added listings appear here until approved.');
@@ -590,7 +590,8 @@ function renderPendingListings() {
         </div>
       </div>
       <div class="listing-actions">
-        <span class="listing-status status-pending">Pending</span>
+        <span class="listing-status status-pending">${normStatus(p) === 'rejected' ? 'Rejected' : 'Pending'}</span>
+        ${normStatus(p) === 'rejected' ? `<button class="btn-edit-sm" onclick="goEdit('${p.id}')">Edit &amp; resubmit</button>` : ''}
       </div>
     </div>`).join('');
 }
@@ -1414,7 +1415,7 @@ function loadEditIntoForm(id) {
   document.getElementById('itemDesc').value  = p.desc  || '';
   document.getElementById('itemCat').value   = p.cat || p.category || '';
   document.getElementById('itemCond').value  = p.cond ? String(p.cond) : '';
-  const tradeVal = (p.trade || '').slice(0, 20);
+  const tradeVal = (p.trade || '').slice(0, 30);
   document.getElementById('itemTrade').value = tradeVal;
   // Sync counter with loaded value
   updateTradeCounter(document.getElementById('itemTrade'));
@@ -1473,8 +1474,8 @@ async function publishListing(e) {
 
   const description = document.getElementById('itemDesc').value.trim();
   const descriptionWords = description ? description.split(/\s+/).length : 0;
-  if (descriptionWords < 16 || descriptionWords > 34) {
-    showToast(`Description must contain 16 to 34 words. You entered ${descriptionWords}.`, 'error');
+  if (descriptionWords < 10 || descriptionWords > 25) {
+    showToast(`Description must contain 10 to 25 words. You entered ${descriptionWords}.`, 'error');
     document.getElementById('itemDesc').focus();
     return;
   }
@@ -1513,9 +1514,9 @@ async function publishListing(e) {
       if (!res.ok) throw new Error(data?.detail || 'Failed to update listing');
 
       await loadMyPosts();
-      showToast('Listing updated! ✅', 'success');
+      showToast('Listing updated and submitted for admin review.', 'success');
       resetListingForm();
-      setTimeout(() => navigate('activeListings'), 900);
+      setTimeout(() => navigate('pendingListings'), 900);
     } catch(err) {
       showToast(err.message || 'Could not update listing.', 'error');
     }
@@ -1536,9 +1537,9 @@ async function publishListing(e) {
       if (!res.ok) throw new Error(data?.detail || data?.message || 'Failed to publish listing');
 
       await loadMyPosts();
-      showToast('Listing published! 🎉', 'success');
+      showToast('Listing submitted for admin review.', 'success');
       resetListingForm();
-      setTimeout(() => navigate('activeListings'), 900);
+      setTimeout(() => navigate('pendingListings'), 900);
     } catch(err) {
       showToast(err.message || 'Could not publish listing.', 'error');
     }
@@ -1600,6 +1601,13 @@ window.fetch = function(...args) {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const verifiedUser = await BartifySession.resolve({memberOnly: true});
+    if (!verifiedUser) return;
+  } catch (err) {
+    showToast(err.message, 'error');
+    return;
+  }
   const u = getOrInitUser();
   applyUserToUI(u);
 

@@ -7,13 +7,15 @@ from typing import List, Optional
 import os
 import shutil
 import uuid
+from app.post_status import PENDING, LABELS
+from app.moderation import moderate_post
 
 router = APIRouter()
 
 UPLOAD_ROOT = Path("uploads") / "posts"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
-MIN_DESCRIPTION_WORDS = 16
-MAX_DESCRIPTION_WORDS = 34
+MIN_DESCRIPTION_WORDS = 10
+MAX_DESCRIPTION_WORDS = 25
 
 
 def _validate_description(description: str) -> str:
@@ -52,7 +54,7 @@ def _build_post_payload(post: models.Post, category_name: str, image_urls: list[
         "valueFrom": float(post.price_from),
         "valueTo": float(post.price_to),
         "images": image_urls,
-        "status": "active" if post.status == 1 else "pending",
+        "status": LABELS.get(post.status, "pending"),
         "date": created_at.split("T")[0] if created_at else None,
         "created_at": created_at,
         "seller": {
@@ -172,10 +174,7 @@ async def update_post(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    post = db.query(models.Post).options(
-        joinedload(models.Post.category),
-        joinedload(models.Post.images)
-    ).filter(models.Post.p_id == post_id).first()
+    post = db.query(models.Post).filter(models.Post.p_id == post_id).with_for_update().first()
 
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -231,12 +230,16 @@ async def update_post(
         # Keep existing images
         new_image_urls = [img.image_url for img in post.images if img.status == 1]
 
+    # Every edit returns to review; approved listings cannot bypass moderation.
+    post.status = PENDING
+    db.flush()
+    moderate_post(post, db)
     db.commit()
     db.refresh(post)
 
     cat_label = post.category.category if post.category else "General"
     return {
-        "message": "Post updated",
+        "message": "Post updated and submitted for review",
         "post": _build_post_payload(post, cat_label, new_image_urls, current_user)
     }
 
@@ -248,7 +251,7 @@ def delete_post(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    post = db.query(models.Post).filter(models.Post.p_id == post_id).first()
+    post = db.query(models.Post).filter(models.Post.p_id == post_id).with_for_update().first()
 
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -304,7 +307,8 @@ async def create_post(
         price_from=price_from,
         price_to=price_to,
         condition_score=condition_score,
-        user_id=current_user.u_id
+        user_id=current_user.u_id,
+        status=PENDING,
     )
 
     db.add(new_post)
@@ -331,11 +335,13 @@ async def create_post(
             image_urls.append(image_url)
             db.add(models.ProductImage(product_id=new_post.p_id, image_url=image_url, status=1))
 
+        db.flush()
+        moderate_post(new_post, db)
         db.commit()
         db.refresh(new_post)
 
         return {
-            "message": "Post created",
+            "message": "Post submitted for admin review",
             "post": _build_post_payload(new_post, category_row.category, image_urls, current_user)
         }
     except Exception:

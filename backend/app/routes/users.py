@@ -59,6 +59,7 @@ async def signup(
         "token_type": "bearer",
         "user": {
             "id": new_user.u_id,
+            "role_id": new_user.role_id,
             "name": new_user.name,
             "email": new_user.email,
             "picture": new_user.user_image
@@ -71,6 +72,8 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     
     if not db_user or not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if db_user.status != 1:
+        raise HTTPException(status_code=403, detail="Account is inactive")
     
     token = create_access_token({"user_id": db_user.u_id})
     return {
@@ -78,10 +81,21 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user": {
             "id": db_user.u_id,
+            "role_id": db_user.role_id,
             "name": db_user.name,
             "email": db_user.email,
             "picture": db_user.user_image
         }
+    }
+
+
+# The database role, rather than browser storage or a JWT role claim, is authoritative.
+@router.get("/me")
+def get_me(current_user: models.User = Depends(get_current_user)):
+    return {
+        "id": current_user.u_id, "name": current_user.name,
+        "email": current_user.email, "contact": current_user.contact,
+        "picture": current_user.user_image, "role_id": current_user.role_id,
     }
 
 

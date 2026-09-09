@@ -86,7 +86,7 @@ async function validateLogin() {
     localStorage.setItem('barterUser', JSON.stringify(user));
     localStorage.setItem('bartifyUser', JSON.stringify(user));
 
-    window.location.href = 'index.html';
+    window.location.href = user.role_id === 2 ? 'adminDashboard.html' : 'index.html';
   } catch (err) {
     showError('password', 'passwordError', err.message || 'Server error. Please try again.');
   }

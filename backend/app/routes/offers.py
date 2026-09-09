@@ -42,7 +42,7 @@ async def create_offer(
     current_user: models.User = Depends(get_current_user)
 ):
     target_post = db.query(models.Post).filter(models.Post.p_id == post_id).first()
-    if not target_post:
+    if not target_post or target_post.status != 1:
         raise HTTPException(status_code=404, detail="Listing not found")
     if target_post.user_id == current_user.u_id:
         raise HTTPException(status_code=400, detail="You can't offer an exchange on your own listing")
@@ -205,6 +205,9 @@ def accept_offer(
     target_post = db.query(models.Post).filter(models.Post.p_id == offer.post_id).first()
     if not target_post or target_post.user_id != current_user.u_id:
         raise HTTPException(status_code=403, detail="Not authorized to act on this offer")
+
+    if target_post.status != 1:
+        raise HTTPException(status_code=409, detail="Only approved listings can accept offers")
 
     offer.status = 2  # accepted
     db.commit()
