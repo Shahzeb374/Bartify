@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app import models
-from app.routes import users, posts, offers, messages, admin
+from app.routes import users, posts, offers, messages, admin, reports
 from fastapi.staticfiles import StaticFiles
 import os
 
@@ -36,6 +36,7 @@ app.include_router(posts.router, prefix="/posts", tags=["Posts"])
 app.include_router(offers.router, prefix="/offers", tags=["Offers"])
 app.include_router(messages.router, prefix="/messages", tags=["Messages"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+app.include_router(reports.router, prefix="/reports", tags=["Reports"])
 
 # Test route
 @app.get("/")

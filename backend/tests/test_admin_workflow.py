@@ -26,7 +26,7 @@ from jose import jwt
 from app import models
 from app.auth import create_access_token
 from app.moderation import classify_text
-from app.routes import admin, users, posts, offers
+from app.routes import admin, users, posts, offers, reports
 from app.utils.dependencies import get_db
 from app.utils.security import hash_password
 
@@ -56,7 +56,7 @@ class AdminWorkflowTests(unittest.TestCase):
             ])
             db.commit()
         app = FastAPI()
-        for router, prefix in [(users.router, "/users"), (posts.router, "/posts"), (offers.router, "/offers"), (admin.router, "/admin")]:
+        for router, prefix in [(users.router, "/users"), (posts.router, "/posts"), (offers.router, "/offers"), (admin.router, "/admin"), (reports.router, "/reports")]:
             app.include_router(router, prefix=prefix)
         def test_db():
             with self.sessions() as db:
@@ -284,6 +284,79 @@ class AdminWorkflowTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(self.client.post('/users/login', json={'email':'updated@example.com','password':'Testing123!'}).status_code, 401)
         self.assertEqual(self.client.post('/users/login', json={'email':'updated@example.com','password':'Updated123!'}).status_code, 200)
+
+
+    def test_public_owner_profile_counts_both_sides(self):
+        post_id = self.submit()
+        self.decide(self.queued()[0])
+        with self.sessions() as db:
+            db.add(models.Post(p_id=99, user_id=3, title='Buyer item', description='Another item', in_exchange_for='Laptop', price_from=1, price_to=2, condition_score=8, status=1))
+            db.flush()
+            db.add_all([
+                models.Offer(post_id=post_id, offering_user_id=3, title='Accepted incoming', status=2),
+                models.Offer(post_id=99, offering_user_id=2, title='Accepted outgoing', status=2),
+                models.Offer(post_id=post_id, offering_user_id=3, title='Rejected incoming', status=0),
+                models.Offer(post_id=99, offering_user_id=2, title='Pending outgoing', status=1),
+            ])
+            db.commit()
+        response = self.client.get(f'/posts/{post_id}')
+        self.assertEqual(response.status_code, 200)
+        seller = response.json()['seller']
+        self.assertEqual(seller['email'], 'seller@example.com')
+        self.assertEqual(seller['name'], 'Seller')
+        self.assertIsNone(seller['avatar'])
+        self.assertEqual(seller['barter_stats'], {'accepted':2, 'rejected':1, 'pending':1, 'total':4})
+        self.assertNotIn('password', seller)
+        self.assertNotIn('reports', seller)
+
+    def test_reporting_auth_targets_duplicates_and_admin_resolution(self):
+        post_id = self.submit()
+        data = {'target_type':'post', 'target_id':post_id, 'reason':'misleading', 'details':'The item description seems inaccurate.'}
+        self.assertEqual(self.client.post('/reports/', json=data).status_code, 401)
+        self.assertEqual(self.client.post('/reports/', json=data, headers=self.headers(3)).status_code, 404)
+        self.decide(self.queued()[0])
+        self.assertEqual(self.client.post('/reports/', json=data, headers=self.headers(2)).status_code, 400)
+        response = self.client.post('/reports/', json=data, headers=self.headers(3))
+        self.assertEqual(response.status_code, 201, response.text)
+        report_id = response.json()['id']
+        self.assertEqual(self.client.post('/reports/', json=data, headers=self.headers(3)).status_code, 409)
+        report = self.client.get('/admin/reports?status=submitted', headers=self.headers()).json()['items'][0]
+        self.assertEqual(report['target_name'], 'Laptop for trade')
+        self.assertEqual(report['reporter_name'], 'Buyer')
+        self.assertEqual(self.client.get('/admin/reports?status=submitted', headers=self.headers(3)).status_code, 403)
+        resolution = {'decision':'resolved', 'resolution':'Reviewed listing and contacted owner.'}
+        self.assertEqual(self.client.post(f'/admin/reports/{report_id}/decision', json=resolution, headers=self.headers(3)).status_code, 403)
+        response = self.client.post(f'/admin/reports/{report_id}/decision', json=resolution, headers=self.headers())
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(self.client.post(f'/admin/reports/{report_id}/decision', json=resolution, headers=self.headers()).status_code, 409)
+        self.assertEqual(self.client.get('/admin/reports?status=submitted', headers=self.headers()).json()['total'], 0)
+        reviewed = self.client.get('/admin/reports?status=reviewed', headers=self.headers()).json()['items'][0]
+        self.assertEqual(reviewed['resolution'], resolution['resolution'])
+        self.assertIsNotNone(reviewed['reviewed_at'])
+        self.assertEqual(self.client.get(f'/posts/{post_id}').status_code, 200)
+
+    def test_user_reporting_validation_and_deleted_target_snapshot(self):
+        post_id = self.submit()
+        self.decide(self.queued()[0])
+        data = {'target_type':'user', 'target_id':2, 'reason':'spam', 'details':'This user sent repeated spam messages.'}
+        self.assertEqual(self.client.post('/reports/', json=data, headers=self.headers(2)).status_code, 400)
+        self.assertEqual(self.client.post('/reports/', json={**data, 'target_id':999}, headers=self.headers(3)).status_code, 404)
+        self.assertEqual(self.client.post('/reports/', json={**data, 'details':'          '}, headers=self.headers(3)).status_code, 400)
+        self.assertEqual(self.client.post('/reports/', json={**data, 'reason':'invalid'}, headers=self.headers(3)).status_code, 422)
+        self.assertEqual(self.client.post('/reports/', json=data, headers=self.headers(3)).status_code, 201)
+        report = self.client.get('/admin/reports?status=submitted&search=spam&page_size=1', headers=self.headers()).json()
+        self.assertEqual(report['total'], 1)
+        self.assertEqual(report['items'][0]['target_type'], 'user')
+        data.update(target_type='post', target_id=post_id)
+        self.assertEqual(self.client.post('/reports/', json=data, headers=self.headers(3)).status_code, 201)
+        self.assertEqual(self.client.delete(f'/posts/{post_id}', headers=self.headers(2)).status_code, 200)
+        report = self.client.get('/admin/reports?status=submitted', headers=self.headers()).json()['items'][0]
+        self.assertIsNone(report['post_id'])
+        self.assertEqual(report['target_name'], 'Laptop for trade')
+        self.assertTrue(report['post_description'])
+        self.assertEqual(self.client.post(f"/admin/reports/{report['id']}/decision", headers=self.headers(), json={'decision':'dismissed','resolution':'Post removed by the owner.'}).status_code, 200)
+        self.assertEqual(self.client.get('/admin/users/2', headers=self.headers(3)).status_code, 403)
+        self.assertEqual(self.client.get('/admin/users/2', headers=self.headers()).status_code, 200)
 
 
 if __name__ == "__main__":

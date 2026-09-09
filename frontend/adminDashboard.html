@@ -33,8 +33,7 @@
       </div>
 
       <button class="btn-new-report btn-new-report-top" id="refreshOverviewBtn" type="button" title="Refresh dashboard overview">
-        <i data-lucide="plus"></i>
-        <span>New Report</span>
+        <span>Refresh</span>
       </button>
 
       <nav class="nav" aria-label="Main navigation">
@@ -223,10 +222,10 @@
       </div>
 
       <div class="page" id="page-reports" hidden>
-        <div class="page-title"><h1>Reports & Flagged Content</h1><p>Model-flagged pending posts and recorded admin decisions. User-submitted reports are not available yet.</p></div>
+        <div class="page-title"><h1>Reports & Flagged Content</h1><p>Review user and post reports, model-flagged posts, and moderation history.</p></div>
         <section class="card">
           <div class="card-header admin-toolbar">
-            <label>Filter <select id="reportsFilter" class="admin-select"><option value="pending">Model flagged</option><option value="resolved">Review history</option></select></label>
+            <label>Filter <select id="reportsFilter" class="admin-select"><option value="submitted">User reports</option><option value="reviewed">Reviewed reports</option><option value="pending">Model flagged</option><option value="resolved">Post review history</option></select></label>
             <button class="btn-outline" data-reload="reports" type="button">Refresh</button>
             
           </div>

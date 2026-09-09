@@ -1381,3 +1381,7 @@ tr.row-hidden{ display:none; }
 .admin-category-list .donut-legend-row { justify-content: space-between; padding: 10px 0; }
 button:disabled { cursor: not-allowed; opacity: .6; }
 @media(max-width:640px) { .admin-data-table { min-width: 620px; } }
+.admin-report-review { margin-top: 20px; }
+.admin-report-review label, .admin-report-review textarea { display: block; width: 100%; }
+.admin-report-review textarea { margin: 8px 0; border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px; font: inherit; }
+.admin-report-review p { color: var(--text-muted); font-size: 13px; }

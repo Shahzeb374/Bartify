@@ -4,6 +4,10 @@
 let activeCategory = 'All';
 let currentQuery   = '';
 let cachedPosts    = [];   // API se aaye posts yahan store honge
+let detailRequest = 0;
+let detailPost = null;
+let reportTarget = null;
+let reportSubmitting = false;
 
 /* ═══ FILTERS ═══ */
 function filterCat(btn) {
@@ -149,16 +153,39 @@ function cardHTML(p) {
 }
 
 /* ═══ DETAIL MODAL ═══ */
-function openDetail(id) {
-  const p = cachedPosts.find(x => String(x.id) === String(id));
-  if (!p) return;
+async function openDetail(id) {
+  const sequence = ++detailRequest;
+  detailPost = null;
+  document.getElementById('pdBody').textContent = 'Loading listing and owner details...';
+  document.getElementById('pdOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  try {
+    const response = await fetch(`${API_BASE_URL}/posts/${encodeURIComponent(id)}`);
+    if (!response.ok) throw new Error(response.status === 404 ? 'This listing is no longer available.' : 'Could not load listing details. Please retry.');
+    const p = await response.json();
+    if (sequence !== detailRequest) return;
+    p.images = (p.images || []).map(resolveProfileImageUrl);
+    detailPost = p;
+    renderPostDetail(p);
+  } catch (error) {
+    if (sequence !== detailRequest) return;
+    document.getElementById('pdBody').textContent = error.message;
+    const retry = document.createElement('button');
+    retry.className = 'pc-view-btn'; retry.textContent = 'Retry';
+    retry.onclick = () => openDetail(id);
+    document.getElementById('pdBody').append(retry);
+  }
+}
+
+function renderPostDetail(p) {
 
   const condLabel = p.cond ? (p.cond + '/10') : (p.condLabel || '');
   const condClass = p.cond >= 9 ? 'like-new' : p.cond >= 7 ? 'good' : p.cond >= 5 ? 'fair' : 'poor';
 
   const sellerName = (p.seller && p.seller.name) ? p.seller.name : (p.ownerName || 'Bartify User');
   const sellerInit = sellerName.charAt(0).toUpperCase();
-  const sellerAvHTML = (p.seller && p.seller.avatar) ? `<img src="${p.seller.avatar}" alt="">` : sellerInit;
+  const sellerAvatar = resolveProfileImageUrl(p.seller?.avatar);
+  const sellerAvHTML = sellerAvatar ? `<img src="${esc(sellerAvatar)}" alt="Profile of ${esc(sellerName)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${esc(sellerInit)}</span>` : esc(sellerInit);
   const dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US',{ month:'numeric', day:'numeric', year:'numeric' }) : '';
 
   const imgs = (p.images && p.images.length) ? p.images : [];
@@ -187,10 +214,12 @@ function openDetail(id) {
     </div>
     <div class="pd-info">
       <h2 class="pd-title">${esc(p.title)}</h2>
-      <div class="pd-seller">
+      <button type="button" class="pd-seller pd-owner-trigger" onclick="openOwnerProfile()" aria-haspopup="dialog" aria-controls="ownerProfileDialog" aria-label="View owner profile">
         <div class="pd-seller-av">${sellerAvHTML}</div>
         <div><div class="pd-seller-name">${esc(sellerName)}</div></div>
-      </div>
+        <span class="pd-profile-hint">View profile</span>
+      </button>
+
       <div class="pd-seller-meta">
         ${dateStr ? `<span><i class="bi bi-calendar3"></i> ${dateStr}</span>` : ''}
         <span><i class="bi bi-tag"></i> ${esc(p.cat||'General')}</span>
@@ -204,10 +233,38 @@ function openDetail(id) {
         <div class="pd-value-big">Rs. ${getDisplayValue(p)}</div>
       </div>
       <button class="pd-offer-btn" onclick="offerExchange('${p.id}')">Offer Exchange</button>
+      <button type="button" class="report-link" onclick="openReport('post',${p.id})">Report post</button>
     </div>`;
 
   document.getElementById('pdOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
+}
+
+function openOwnerProfile() {
+  const p = detailPost;
+  if (!p) return;
+  const seller = p.seller;
+  const stats = seller.barter_stats;
+  const avatar = resolveProfileImageUrl(seller.avatar);
+  const initial = esc((seller.name || 'U').charAt(0).toUpperCase());
+  document.getElementById('ownerProfileBody').innerHTML = `
+    <div class="owner-card-heading">
+      <div class="pd-seller-av owner-card-avatar">${avatar ? '<img src="' + esc(avatar) + '" alt="Owner profile image" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>' + initial + '</span>' : initial}</div>
+      <h3>${esc(seller.name)}</h3>
+    </div>
+      <section class="pd-owner-profile" aria-label="Listing owner profile">
+        <p class="pd-owner-email">${esc(p.seller.email)}</p>
+        <div class="pd-barter-stats">
+          <div class="barter-stat stat-success"><strong>${stats.accepted}</strong><span>Successful (accepted)</span></div>
+          <div class="barter-stat stat-failed"><strong>${stats.rejected}</strong><span>Failed (rejected)</span></div>
+          <div class="barter-stat stat-pending"><strong>${stats.pending}</strong><span>Pending</span></div>
+          <div class="barter-stat stat-total"><strong>${stats.total}</strong><span>Total offers</span></div>
+        </div>
+        <p class="pd-stats-note">Includes offers sent and received. Accepted offers do not confirm a completed handover.</p>
+        <button type="button" class="report-link" onclick="openReport('user',${p.user_id})">Report user</button>
+      </section>
+  `;
+  document.getElementById('ownerProfileDialog').showModal();
 }
 
 function switchImg(src, thumb) {
@@ -218,6 +275,8 @@ function switchImg(src, thumb) {
 }
 
 function closeDetail() {
+  detailRequest++;
+  detailPost = null;
   document.getElementById('pdOverlay').classList.remove('show');
   document.body.style.overflow = '';
 }
@@ -536,3 +595,52 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (justAdded)  { localStorage.removeItem('bartifyJustAdded');  showToast('Listing published! 🎉','success'); }
   if (justEdited) { localStorage.removeItem('bartifyJustEdited'); showToast('Listing updated!','success'); }
 });
+
+/* User and post reporting. Identity and target permissions are checked by the API. */
+function openReport(type, id) {
+  if (reportSubmitting) return;
+  reportTarget = {target_type:type, target_id:Number(id)};
+  const post = detailPost || cachedPosts.find(p => Number(p.id) === Number(id));
+  document.getElementById('reportTitle').textContent = type === 'user' ? 'Report user' : 'Report post';
+  document.getElementById('reportSubject').textContent = type === 'user' ? (post?.seller?.name || 'Listing owner') : (post?.title || `Post #${id}`);
+  document.getElementById('reportForm').reset();
+  document.getElementById('reportStatus').textContent = '';
+  const signedIn = Boolean(localStorage.getItem('barterToken'));
+  document.getElementById('reportForm').hidden = !signedIn;
+  document.getElementById('reportLogin').hidden = signedIn;
+  document.getElementById('submitReport').disabled = false;
+  document.getElementById('reportDialog').showModal();
+}
+
+document.getElementById('closeReport').addEventListener('click', () => {
+  if (!reportSubmitting) document.getElementById('reportDialog').close();
+});
+document.getElementById('reportDialog').addEventListener('cancel', event => {
+  if (reportSubmitting) event.preventDefault();
+});
+document.getElementById('reportForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!reportTarget || reportSubmitting) return;
+  const details = document.getElementById('reportDetails').value.trim();
+  const status = document.getElementById('reportStatus');
+  if (details.length < 10) { status.textContent = 'Please describe the problem in at least 10 characters.'; return; }
+  reportSubmitting = true;
+  document.getElementById('submitReport').disabled = document.getElementById('closeReport').disabled = true;
+  status.textContent = 'Submitting report...';
+  try {
+    const response = await fetch(`${API_BASE_URL}/reports/`, {
+      method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${localStorage.getItem('barterToken') || ''}`},
+      body:JSON.stringify({...reportTarget, reason:document.getElementById('reportReason').value, details}),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not submit the report. Please retry.');
+    status.textContent = data.message;
+    document.getElementById('reportForm').hidden = true;
+  } catch (error) { status.textContent = error.message; }
+  finally {
+    reportSubmitting = false;
+    document.getElementById('submitReport').disabled = document.getElementById('closeReport').disabled = false;
+  }
+});
+
+document.getElementById("closeOwnerProfile").addEventListener("click", () => document.getElementById("ownerProfileDialog").close());

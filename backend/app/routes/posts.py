@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, or_
 from app import models, schemas
 from app.utils.dependencies import get_current_user, get_current_user_optional, get_db
 from pathlib import Path
@@ -156,7 +157,16 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
 
     image_urls = [img.image_url for img in post.images if img.status == 1]
     cat_name = post.category.category if post.category else "General"
-    return _build_post_payload(post, cat_name, image_urls, post.user)
+    result = _build_post_payload(post, cat_name, image_urls, post.user)
+    counts = dict(db.query(models.Offer.status, func.count(models.Offer.o_id)).join(models.Post).filter(
+        or_(models.Post.user_id == post.user_id, models.Offer.offering_user_id == post.user_id)
+    ).group_by(models.Offer.status).all())
+    result["seller"].update({
+        "id": post.user_id, "email": post.user.email,
+        "barter_stats": {"accepted": counts.get(2, 0), "rejected": counts.get(0, 0),
+                         "pending": counts.get(1, 0), "total": sum(counts.values())},
+    })
+    return result
 
 
 # ═══ UPDATE POST ═══

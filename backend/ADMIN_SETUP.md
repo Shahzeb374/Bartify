@@ -52,14 +52,22 @@ All sidebar sections now use administrator-only database routes:
 - Users: search, status filters, pagination, details, and member suspension/reactivation.
   Admin accounts cannot be suspended from this interface.
 - Listings: all post statuses, search, pagination, details, and the existing revision-checked review flow.
-- Reports: model-flagged pending posts and persisted moderation history. There is no user-submitted reporting system yet.
+- Reports: user-submitted post/account reports, model-flagged pending posts, and moderation history.
+  Admins can resolve or dismiss submitted reports with a review note; this does not automatically change a post or account.
 - Exchanges: read-only offer details, status filters, search, pagination, and CSV export of matching records.
 - Analytics: real user/listing totals, category counts, and six months of offer activity.
   Accepted offers are labeled accepted, because physical exchange completion is not tracked.
 - Settings: persistent admin name/email and password updates, requiring the current password.
   Two-factor authentication and email notification services are not implemented.
 
-All admin UI behavior is in `frontend/adminDashboard.js`. These additions need no new database tables.
+All admin UI behavior is in `frontend/adminDashboard.js`.
+
+Home page post details fetch the owner's name, email, profile image, and accepted/rejected/pending offer counts.
+Counts include offers sent and received. Actual physical exchange completion is not tracked.
+Signed-in users can report another user's post or profile using `POST /reports/`.
+Reports are stored in `user_reports`, created by the existing startup `create_all` routine.
+A partial unique index prevents duplicate pending reports by the same reporter for the same target.
+Target snapshots remain available if a reported post or user is deleted. Reports are visible only to admins.
 
 ## Validation
 
@@ -76,3 +84,5 @@ repository root, then run `node frontend/tests/admin-dashboard.cjs` with Playwri
 available. The fixture binds only to `127.0.0.1:8011`, uses disposable test accounts,
 and is not imported by the application. The browser test redirects API traffic to
 that fixture so it cannot approve or reject real posts.
+For owner profiles and reporting, run `node frontend/tests/home-reporting.cjs` against a fresh fixture server.
+Restart the disposable server between browser suites because each suite changes its synthetic records.

@@ -204,7 +204,15 @@ def get_listing(post_id: int, db: Session = Depends(get_db)):
 @router.get('/reports')
 def list_reports(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
                  search: str = Query('', max_length=255),
-                 status: Literal['pending', 'resolved'] = 'pending', db: Session = Depends(get_db)):
+                 status: Literal['pending', 'resolved', 'submitted', 'reviewed'] = 'pending', db: Session = Depends(get_db)):
+    if status in ('submitted', 'reviewed'):
+        query = db.query(models.UserReport).filter(models.UserReport.status == 'pending' if status == 'submitted' else models.UserReport.status != 'pending')
+        if search.strip():
+            pattern = f'%{search.strip()}%'
+            query = query.filter(or_(models.UserReport.target_name.ilike(pattern), models.UserReport.reporter_name.ilike(pattern),
+                                    models.UserReport.reason.ilike(pattern), models.UserReport.details.ilike(pattern)))
+        rows, total = paginated(query.order_by(models.UserReport.id.desc()), page, page_size)
+        return {'items': [report_payload(r) for r in rows], 'total': total, 'page': page, 'page_size': page_size}
     if status == 'pending':
         return list_listings(page, page_size, search, 'issue', db)
     query = db.query(models.ModerationDecision)
@@ -307,3 +315,43 @@ def update_admin_password(data: AdminPassword, db: Session = Depends(get_db), ad
     admin.password = hash_password(data.new_password)
     db.commit()
     return {'message': 'Password changed successfully'}
+
+
+def report_payload(report):
+    return {'id': report.id, 'target_type': report.target_type, 'target_name': report.target_name,
+            'target_user_id': report.target_user_id, 'post_id': report.post_id,
+            'post_description': report.post_description, 'reporter_name': report.reporter_name,
+            'reason': report.reason, 'details': report.details, 'status': report.status,
+            'resolution': report.resolution, 'created_at': report.created_at.isoformat(),
+            'reviewed_at': report.reviewed_at.isoformat() if report.reviewed_at else None}
+
+
+class ReportDecision(BaseModel):
+    decision: Literal['resolved', 'dismissed']
+    resolution: str = Field(min_length=3, max_length=1000)
+
+
+@router.post('/reports/{report_id}/decision')
+def review_user_report(report_id: int, data: ReportDecision, db: Session = Depends(get_db),
+                       admin: models.User = Depends(get_current_admin)):
+    report = db.query(models.UserReport).filter(models.UserReport.id == report_id).with_for_update().first()
+    if not report:
+        raise HTTPException(404, 'Report no longer exists')
+    if report.status != 'pending':
+        raise HTTPException(409, 'This report has already been reviewed. Refresh the list.')
+    if len(data.resolution.strip()) < 3:
+        raise HTTPException(400, 'Please add a review note')
+    report.status = data.decision
+    report.resolution = data.resolution.strip()
+    report.reviewed_by = admin.u_id
+    report.reviewed_at = datetime.now()
+    db.commit()
+    return {'message': f'Report {report.status}', 'report': report_payload(report)}
+
+
+@router.get('/users/{user_id}')
+def get_admin_user_details(user_id: int, db: Session = Depends(get_db)):
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(404, 'User no longer exists')
+    return user_payload(user, db)

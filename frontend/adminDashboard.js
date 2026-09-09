@@ -309,6 +309,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (key === 'exchanges') {
       headers = ['Offer', 'Listing', 'Offered by', 'Listing owner', 'Status', 'Action'];
       rows = items.map(o => [escape(o.title), escape(o.listing), escape(o.offered_by), escape(o.owner), badge(o.status), viewButton(o.id)]);
+    } else if (key === 'reports' && ['submitted','reviewed'].includes(filter)) {
+      headers = ['Reported target', 'Type', 'Reported by', 'Reason', 'Status', 'Action'];
+      rows = items.map(r => [escape(r.target_name), escape(title(r.target_type)), escape(r.reporter_name), escape(title(r.reason)), badge(r.status), viewButton(r.id, 'Review')]);
     } else if (key === 'reports' && filter === 'resolved') {
       headers = ['Listing', 'Admin', 'Decision', 'Model result', 'Reviewed at'];
       rows = items.map(r => [escape(r.title), escape(r.admin_name), badge(r.decision), badge(r.model_label), escape(date(r.created_at))]);
@@ -328,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!button) return;
       const record = state[key].items.find(r => r.id === Number(button.dataset.record));
       if (!record) return;
+      if (key === 'reports' && record.target_type) return showReport(record);
       if (key === 'users' || key === 'exchanges') return showDetails(key, record);
       button.disabled = true;
       try { await window.adminAPI.review(record.id); }
@@ -335,6 +339,59 @@ document.addEventListener('DOMContentLoaded', () => {
       finally { button.disabled = false; }
     });
   });
+  function showReport(report) {
+    $('adminDetailTitle').textContent = 'Report #' + report.id;
+    const fields = [['Target', report.target_name], ['Type', report.target_type], ['Reported by', report.reporter_name], ['Reason', report.reason], ['Details', report.details], ['Submitted', date(report.created_at)], ['Status', report.status]];
+    if (report.post_description) fields.push(['Post description when reported', report.post_description]);
+    if (report.resolution) fields.push(['Review note', report.resolution], ['Reviewed', date(report.reviewed_at)]);
+    $('adminDetailBody').innerHTML = '<dl class="admin-detail-fields">' + fields.map(([key,value]) => '<dt>' + escape(key) + '</dt><dd>' + escape(value) + '</dd>').join('') + '</dl>';
+    $('adminDetailStatus').textContent = '';
+    $('adminDetailActions').replaceChildren();
+    for (const [label, id, type] of [['View target user', report.target_user_id, 'user'], ['View post', report.post_id, 'post']]) {
+      if (!id) continue;
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'btn-outline'; button.textContent = label;
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          if (type === 'user') {
+            const user = await api('/admin/users/' + id);
+            showDetails('users', user);
+          } else {
+            await window.adminAPI.review(id);
+            $('adminDetailDialog').close();
+          }
+        } catch (error) { $('adminDetailStatus').textContent = error.message; }
+        finally { button.disabled = false; }
+      });
+      $('adminDetailActions').append(button);
+    }
+    if (report.status === 'pending') {
+      const form = document.createElement('form');
+      form.className = 'admin-report-review';
+      form.innerHTML = '<label for="reportResolution">Review note</label><textarea id="reportResolution" required minlength="3" maxlength="1000" rows="3"></textarea><p>Closing a report records your decision. Use user or listing controls separately for account or post actions.</p><button class="btn-save" type="submit" value="resolved">Resolve report</button> <button class="btn-outline" type="submit" value="dismissed">Dismiss report</button>';
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (detailBusy) return;
+        const resolution = $('reportResolution').value.trim();
+        if (resolution.length < 3) { $('adminDetailStatus').textContent = 'Please add a review note.'; return; }
+        detailBusy = true;
+        $('closeAdminDetail').disabled = true;
+        const buttons = Array.from($('adminDetailDialog').querySelectorAll('button'));
+        buttons.forEach(button => { button.disabled = true; });
+        try {
+          const result = await api('/admin/reports/' + report.id + '/decision', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision:event.submitter?.value || 'resolved', resolution})});
+          showReport(result.report);
+          $('adminDetailStatus').textContent = result.message;
+          await loadSection('reports');
+        } catch (error) { $('adminDetailStatus').textContent = error.message; }
+        finally { detailBusy = false; buttons.forEach(button => { button.disabled = false; }); $('closeAdminDetail').disabled = false; }
+      });
+      $('adminDetailBody').append(form);
+    }
+    if (!$('adminDetailDialog').open) $('adminDetailDialog').showModal();
+  }
+
   function showDetails(key, record) {
     $('adminDetailTitle').textContent = key === 'users' ? record.name : record.title;
     const fields = key === 'users'
@@ -355,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const result = await api(`/admin/users/${record.id}/status`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status})});
           showDetails(key, result.user);
           $('adminDetailStatus').textContent = result.message;
-          await loadSection(key);
+          await window.reloadAdminSection();
         } catch (error) { $('adminDetailStatus').textContent = error.message; }
         finally { detailBusy = false; button.disabled = false; $('closeAdminDetail').disabled = false; }
       });

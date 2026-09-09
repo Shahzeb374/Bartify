@@ -258,3 +258,39 @@ textarea.of-input { resize:vertical; min-height:70px; }
   .btn-login { display:none; }
   .products-grid { grid-template-columns:1fr 1fr; gap:10px; }
 }
+/* Listing owner profile and reporting */
+.pd-owner-profile { margin: 12px 0 20px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+.pd-owner-trigger { border: 0; background: transparent; padding: 6px 0; text-align: left; cursor: pointer; width: 100%; }
+.pd-owner-trigger:hover .pd-seller-name { text-decoration: underline; }
+.pd-profile-hint { margin-left: auto; background: linear-gradient(135deg,#1a56db,#3b82f6); color: #fff; font-size: .75rem; font-weight: 700; padding: 10px 14px; border-radius: 10px; white-space: nowrap; box-shadow: 0 4px 14px rgba(26,86,219,.3); }
+.pd-owner-trigger:hover .pd-profile-hint { opacity: .9; }
+.owner-card-heading { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+.owner-card-heading h3 { font-size: 1.1rem; margin: 0; overflow-wrap: anywhere; }
+.owner-card-avatar { width: 64px; height: 64px; font-size: 1.5rem; }
+.owner-profile-dialog .pd-owner-profile { margin-bottom: 0; }
+.pd-owner-email { font-size: .85rem; overflow-wrap: anywhere; margin-bottom: 12px; }
+.pd-barter-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.pd-barter-stats strong, .pd-barter-stats span { display: block; }
+.pd-barter-stats strong { font-size: 1.3rem; }
+.pd-barter-stats span, .pd-stats-note { font-size: .75rem; color: #64748b; }
+.barter-stat { padding: 12px; border-radius: 10px; border: 1px solid; }
+.pd-barter-stats .barter-stat span { color: inherit; }
+.stat-success { background: #ecfdf3; color: #166534; border-color: #bbf7d0; }
+.stat-failed { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.stat-pending { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+.stat-total { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.pd-stats-note { margin: 12px 0 0; }
+.report-link { border: 0; background: #dc2626; color: #fff; padding: 10px 16px; border-radius: 10px; text-decoration: none; font-size: .8rem; font-weight: 700; cursor: pointer; transition: background .2s; }
+.report-link:hover { background: #b91c1c; }
+.pd-info > .report-link { margin-top: 12px; }
+.pd-owner-profile > .report-link { margin-top: 12px; }
+.report-link:focus-visible, .pd-owner-trigger:focus-visible { outline: 3px solid #1a56db; outline-offset: 3px; }
+.report-dialog { border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; width: min(480px, calc(100% - 32px)); max-height: 90vh; overflow-y: auto; color: #1e293b; }
+.report-dialog::backdrop { background: rgba(15,23,42,.6); }
+.report-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.report-heading h2 { font-size: 1.25rem; }
+.report-heading button { background: transparent; border: 0; font-size: 1.5rem; }
+.report-dialog label { display: block; margin: 12px 0 6px; }
+.report-dialog select, .report-dialog textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.report-dialog p { font-size: .85rem; overflow-wrap: anywhere; }
+.report-dialog form p { color: #64748b; margin-top: 12px; }

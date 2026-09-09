@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Numeric
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Numeric, Index, text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -180,3 +180,26 @@ class ModerationDecision(Base):
     model_label = Column(String(20), nullable=False)
     revision = Column(String(64), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
+
+
+class UserReport(Base):
+    __tablename__ = "user_reports"
+
+    id = Column(Integer, primary_key=True)
+    reporter_id = Column(Integer, ForeignKey("users.u_id", ondelete="SET NULL"), nullable=True)
+    reporter_name = Column(String(100), nullable=False)
+    target_type = Column(String(10), nullable=False)
+    target_key = Column(String(40), nullable=False)
+    target_user_id = Column(Integer, ForeignKey("users.u_id", ondelete="SET NULL"), nullable=True)
+    post_id = Column(Integer, ForeignKey("posts.p_id", ondelete="SET NULL"), nullable=True)
+    target_name = Column(String(255), nullable=False)
+    post_description = Column(Text, nullable=True)
+    reason = Column(String(30), nullable=False)
+    details = Column(String(1000), nullable=False)
+    status = Column(String(20), nullable=False, default="pending")
+    resolution = Column(String(1000), nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.u_id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+    reviewed_at = Column(TIMESTAMP, nullable=True)
+    __table_args__ = (Index("uq_open_user_report", "reporter_id", "target_key", unique=True,
+                           postgresql_where=text("status = 'pending'"), sqlite_where=text("status = 'pending'")),)
