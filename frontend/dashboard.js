@@ -1054,6 +1054,7 @@ function confirmLogout() {
 }
 
 function doLogout() {
+  document.title = dashboardBaseTitle;
   if (chatSocket) { chatSocket.onclose = null; chatSocket.close(); chatSocket = null; }
   localStorage.removeItem('barterToken');
   localStorage.removeItem('barterUser');
@@ -1102,6 +1103,7 @@ async function loadConversations() {
 
 function updateNotificationBadges() {
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+  document.title = totalUnread ? `(${totalUnread}) ${dashboardBaseTitle}` : dashboardBaseTitle;
   const msgBadge = document.getElementById('msgBtnBadge');
   if (msgBadge) {
     msgBadge.textContent  = totalUnread > 9 ? '9+' : totalUnread;
@@ -1145,6 +1147,11 @@ function handleIncomingMessage(conversationId, message) {
     // Isi waqt yehi chat khuli hai — turant bubble add karo, unread mat badhao
     appendMessageBubble(message, false);
     if (convo) { convo.last_message = message.content; convo.last_message_at = message.created_at; }
+    if (document.visibilityState === 'visible') {
+      fetch(`${API_BASE_URL}/messages/conversations/${conversationId}/messages`, {
+        headers: {Authorization: `Bearer ${localStorage.getItem('barterToken')}`}
+      }).then(res => { if (res.ok) loadConversations(); }).catch(() => {});
+    } else loadConversations();
   } else {
     // Kisi aur conversation ka ya widget band hai — unread count badhao
     if (convo) {
@@ -1153,6 +1160,7 @@ function handleIncomingMessage(conversationId, message) {
       convo.last_message_at = message.created_at;
     }
     showToast('New message received', '');
+    if (!convo) loadConversations();
   }
   updateNotificationBadges();
   if (document.getElementById('msgOverlay')?.classList.contains('show') && !activeConversationId) {
@@ -1254,10 +1262,12 @@ async function openChat(conversationId) {
     const res = await fetch(`${API_BASE_URL}/messages/conversations/${conversationId}/messages`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+    if (!res.ok) throw new Error('Could not load messages');
     const data = await res.json();
     renderChatMessages(data.messages || []);
   } catch(e) {
     console.error('Could not load messages:', e);
+    return;
   }
 
   if (convo) convo.unread_count = 0;
@@ -1630,4 +1640,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   showSection('dashHome');
+  if (urlParams.get('messages') === 'open') openMessages();
 });
+
+const dashboardBaseTitle = document.title;
+window.addEventListener('focus', async () => {
+  if (!localStorage.getItem('barterToken')) return;
+  if (activeConversationId && document.getElementById('msgOverlay')?.classList.contains('show')) await openChat(activeConversationId);
+  loadConversations();
+});
+setInterval(() => { if (localStorage.getItem('barterToken')) loadConversations(); }, 15000);

@@ -456,6 +456,7 @@ function isTokenExpired(token) {
 }
 
 function clearSession() {
+  stopHomeMessageNotifications();
   localStorage.removeItem('barterToken');
   localStorage.removeItem('barterUser');
   localStorage.removeItem('bartifyUser');
@@ -588,6 +589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
   checkLoginState();
+  startHomeMessageNotifications();
   renderProducts();
 
   const justAdded  = localStorage.getItem('bartifyJustAdded');
@@ -644,3 +646,63 @@ document.getElementById('reportForm').addEventListener('submit', async event => 
 });
 
 document.getElementById("closeOwnerProfile").addEventListener("click", () => document.getElementById("ownerProfileDialog").close());
+
+/* Homepage unread badge and browser-tab count. */
+const homeBaseTitle = document.title;
+let homeMessageSocket = null;
+let homeMessageTimer = null;
+let homeMessageRetry = null;
+let homeMessageGeneration = 0;
+function setHomeUnread(count) {
+  const badge = document.getElementById('homeMessagesBadge');
+  badge.textContent = count > 9 ? '9+' : String(count);
+  badge.hidden = count === 0;
+  document.getElementById('homeMessagesBtn').setAttribute('aria-label', count ? `Messages, ${count} unread` : 'Messages');
+  document.title = count ? `(${count}) ${homeBaseTitle}` : homeBaseTitle;
+}
+async function refreshHomeUnread() {
+  const token = localStorage.getItem('barterToken');
+  const generation = ++homeMessageGeneration;
+  if (!token) { setHomeUnread(0); return; }
+  try {
+    const response = await fetch(`${API_BASE_URL}/messages/conversations`, {headers:{Authorization:`Bearer ${token}`}});
+    if (response.status === 401 || response.status === 403) { stopHomeMessageNotifications(); return; }
+    if (!response.ok) return;
+    const data = await response.json();
+    if (generation !== homeMessageGeneration || token !== localStorage.getItem('barterToken')) return;
+    setHomeUnread((data.conversations || []).reduce((sum, c) => sum + (Number(c.unread_count) || 0), 0));
+  } catch (_) { /* Retry on the next connection event or scheduled refresh. */ }
+}
+function connectHomeMessageSocket() {
+  const token = localStorage.getItem('barterToken');
+  if (!token || homeMessageSocket) return;
+  const socket = new WebSocket(API_BASE_URL.replace(/^http/, 'ws') + '/messages/ws?token=' + encodeURIComponent(token));
+  homeMessageSocket = socket;
+  socket.onopen = refreshHomeUnread;
+  socket.onmessage = event => {
+    try { if (JSON.parse(event.data).type === 'new_message') refreshHomeUnread(); } catch (_) {}
+  };
+  socket.onclose = () => {
+    if (homeMessageSocket !== socket) return;
+    homeMessageSocket = null;
+    homeMessageRetry = setTimeout(connectHomeMessageSocket, 3000);
+  };
+}
+function stopHomeMessageNotifications() {
+  homeMessageGeneration++;
+  clearInterval(homeMessageTimer); clearTimeout(homeMessageRetry);
+  homeMessageTimer = homeMessageRetry = null;
+  const socket = homeMessageSocket; homeMessageSocket = null;
+  if (socket) socket.close();
+  setHomeUnread(0);
+}
+function startHomeMessageNotifications() {
+  stopHomeMessageNotifications();
+  if (!localStorage.getItem('barterToken')) return;
+  refreshHomeUnread(); connectHomeMessageSocket();
+  homeMessageTimer = setInterval(refreshHomeUnread, 15000);
+}
+window.addEventListener('focus', refreshHomeUnread);
+window.addEventListener('storage', event => { if (event.key === 'barterToken' || event.key === null) startHomeMessageNotifications(); });
+window.addEventListener('pagehide', stopHomeMessageNotifications);
+window.addEventListener('pageshow', event => { if (event.persisted) startHomeMessageNotifications(); });

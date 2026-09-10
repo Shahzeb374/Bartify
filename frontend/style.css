@@ -294,3 +294,7 @@ textarea.of-input { resize:vertical; min-height:70px; }
 .report-dialog select, .report-dialog textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
 .report-dialog p { font-size: .85rem; overflow-wrap: anywhere; }
 .report-dialog form p { color: #64748b; margin-top: 12px; }
+
+.home-messages-btn { position: relative; }
+.home-messages-badge { position: absolute; top: -4px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 700; border: 2px solid #fff; }
+.home-messages-badge[hidden] { display: none; }
