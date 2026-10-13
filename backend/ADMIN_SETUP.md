@@ -5,6 +5,10 @@ continues to create role_id 1 users. Roles are checked against PostgreSQL on eac
 admin request, not trusted from browser storage. No existing account is promoted
 by this implementation.
 
+Application startup inserts missing default roles (`1 = Member`, `2 = Admin`)
+after creating tables. Existing role records and user assignments are preserved.
+Restart the backend after updating to repair a database missing these roles.
+
 ## Run locally
 
 From the repository root:

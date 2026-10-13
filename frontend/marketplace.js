@@ -7,7 +7,7 @@
         id: 1,
         title: "Professional Camera Equipment",
         desc: "Portrait and event photography. Looking to exchange for web design or graphic design services.",
-        user: "Sarah Johnson", userInitials: "SJ", userColor: "#2563EB",
+        user: "Sarah Johnson", userInitials: "SJ", userColor: "var(--eco-primary)",
         category: "Services",
         value: "$200-300",
         verified: true,
@@ -17,7 +17,7 @@
         id: 2,
         title: "Vintage Acoustic Guitar",
         desc: "Well-maintained vintage guitar. Looking for laptop or tablet.",
-        user: "Mike Chen", userInitials: "MC", userColor: "#7C3AED",
+        user: "Mike Chen", userInitials: "MC", userColor: "var(--eco-secondary)",
         category: "Art & Craft",
         value: "$400-500",
         verified: true,
@@ -87,7 +87,7 @@
         id: 9,
         title: "Drone DJI Mini 3",
         desc: "DJI Mini 3 drone with extra batteries. Looking for mirrorless camera.",
-        user: "Tom Baker", userInitials: "TB", userColor: "#2563EB",
+        user: "Tom Baker", userInitials: "TB", userColor: "var(--eco-primary)",
         category: "Electronics",
         value: "$600-750",
         verified: true,
@@ -127,7 +127,7 @@
         id: 13,
         title: "Graphic Design Services",
         desc: "Logo design, branding, and social media graphics. Trade for coding help.",
-        user: "Oscar Diaz", userInitials: "OD", userColor: "#7C3AED",
+        user: "Oscar Diaz", userInitials: "OD", userColor: "var(--eco-secondary)",
         category: "Services",
         value: "$200-400",
         verified: true,
@@ -177,7 +177,7 @@
         id: 18,
         title: "Sofa — 3 Seater",
         desc: "Comfortable 3-seater sofa in light grey. Looking for home appliances.",
-        user: "Ben Carter", userInitials: "BC", userColor: "#2563EB",
+        user: "Ben Carter", userInitials: "BC", userColor: "var(--eco-primary)",
         category: "Furniture",
         value: "$300-500",
         verified: false,
@@ -227,7 +227,7 @@
           <div class="product-card">
             <div class="card-img-wrap">
               <img src="${item.img}" alt="${item.title}" loading="lazy"
-                onerror="this.src='https://via.placeholder.com/400x200?text=Image'"/>
+                onerror="this.onerror=null;this.src='assets/listing-placeholder.svg'"/>
               <button class="card-favorite-btn ${isFavorited ? 'favorited' : ''}" onclick="toggleListingFavorite(${item.id}); event.stopPropagation();">
                 <i class="bi ${isFavorited ? 'bi-heart-fill' : 'bi-heart'}"></i>
               </button>
@@ -282,6 +282,7 @@
       document.getElementById('modalTitle').textContent = item.title;
       document.getElementById('modalImg').src = item.img;
       document.getElementById('modalImg').alt = item.title;
+      document.getElementById('modalImg').alt = item.title;
       document.getElementById('modalProductTitle').textContent = item.title;
       document.getElementById('modalDesc').textContent = item.desc;
       document.getElementById('modalCategory').textContent = item.category;
@@ -313,7 +314,7 @@
     function handleTrade() {
       bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
       showToast('Please sign up to make an offer! 🚀');
-      setTimeout(() => { window.location.href = 'signup.html'; }, 1800);
+      setTimeout(() => { window.location.href = 'Signup.html'; }, 1800);
     }
 
     // ══════════════════════════════
@@ -344,7 +345,7 @@
     function messageSeller() {
       bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
       showToast('Please sign up to message the seller! 💬');
-      setTimeout(() => { window.location.href = 'signup.html'; }, 1800);
+      setTimeout(() => { window.location.href = 'Signup.html'; }, 1800);
     }
 
     // ══════════════════════════════

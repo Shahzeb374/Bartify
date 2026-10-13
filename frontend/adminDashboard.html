@@ -2,15 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<script src="config.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bartify Admin Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="adminDashboard.css" />
+<link rel="stylesheet" href="workspace-theme.css">
 </head>
-<body class="admin-auth-pending"><div id="adminAccessState" role="status">Checking administrator access… <button type="button" onclick="location.reload()">Retry</button></div>
+<body class="admin-app admin-auth-pending"><div id="adminAccessState" role="status">Checking administrator access… <button type="button" onclick="location.reload()">Retry</button></div>
 
   <!-- Mobile overlay -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -21,7 +24,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-top">
         <div class="brand">
-          <div class="brand-avatar">B</div>
+          <div class="brand-avatar" aria-hidden="true">⇄</div>
           <div class="brand-text">
             <span class="brand-name">Bartify</span>
             <span class="brand-sub">Admin Console</span>
@@ -117,7 +120,7 @@
           <div class="stat-card">
             <div class="stat-top">
               <div class="stat-icon"><i data-lucide="users"></i></div>
-              
+
             </div>
             <div class="stat-label">TOTAL USERS</div>
             <div class="stat-value" id="overviewUsers">—</div>
@@ -126,7 +129,7 @@
           <div class="stat-card">
             <div class="stat-top">
               <div class="stat-icon"><i data-lucide="clipboard-list"></i></div>
-              
+
             </div>
             <div class="stat-label">TOTAL LISTINGS</div>
             <div class="stat-value" id="overviewListings">—</div>
@@ -135,7 +138,7 @@
           <div class="stat-card">
             <div class="stat-top">
               <div class="stat-icon"><i data-lucide="arrow-left-right"></i></div>
-              
+
             </div>
             <div class="stat-label">ACCEPTED OFFERS</div>
             <div class="stat-value" id="overviewOffers">—</div>
@@ -144,7 +147,7 @@
           <div class="stat-card">
             <div class="stat-top">
               <div class="stat-icon stat-icon-red"><i data-lucide="flag"></i></div>
-              
+
             </div>
             <div class="stat-label">ISSUES IN QUEUE</div>
             <div class="stat-value" id="overviewIssues">—</div>
@@ -199,7 +202,7 @@
           <div class="card-header admin-toolbar">
             <label>Filter <select id="usersFilter" class="admin-select"><option value="all">All users</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
             <button class="btn-outline" data-reload="users" type="button">Refresh</button>
-            
+
           </div>
           <p id="usersStatus" class="admin-section-status" role="status"></p>
           <div class="table-wrap"><table class="admin-data-table"><thead id="usersHead"></thead><tbody id="usersRows"></tbody></table></div>
@@ -213,7 +216,7 @@
           <div class="card-header admin-toolbar">
             <label>Filter <select id="listingsFilter" class="admin-select"><option value="all">All listings</option><option value="pending">Pending</option><option value="active">Active</option><option value="rejected">Rejected</option><option value="issue">Model flagged</option></select></label>
             <button class="btn-outline" data-reload="listings" type="button">Refresh</button>
-            
+
           </div>
           <p id="listingsStatus" class="admin-section-status" role="status"></p>
           <div class="table-wrap"><table class="admin-data-table"><thead id="listingsHead"></thead><tbody id="listingsRows"></tbody></table></div>
@@ -227,7 +230,7 @@
           <div class="card-header admin-toolbar">
             <label>Filter <select id="reportsFilter" class="admin-select"><option value="submitted">User reports</option><option value="reviewed">Reviewed reports</option><option value="pending">Model flagged</option><option value="resolved">Post review history</option></select></label>
             <button class="btn-outline" data-reload="reports" type="button">Refresh</button>
-            
+
           </div>
           <p id="reportsStatus" class="admin-section-status" role="status"></p>
           <div class="table-wrap"><table class="admin-data-table"><thead id="reportsHead"></thead><tbody id="reportsRows"></tbody></table></div>
@@ -288,7 +291,8 @@
           <p class="review-help">Two-factor authentication and email notification preferences will be available when those services are connected.</p>
         </div>
       </div>
-      </main>
+      <nav class="workspace-links" aria-label="Helpful links"><a href="about-us.html">About Us</a><a href="how-it-works.html">How It Works</a><a href="privacy-policy.html">Privacy Policy</a><a href="terms-conditions.html">Terms &amp; Conditions</a></nav>
+</main>
     </div>
   </div>
 

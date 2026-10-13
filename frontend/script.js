@@ -8,11 +8,34 @@ let detailRequest = 0;
 let detailPost = null;
 let reportTarget = null;
 let reportSubmitting = false;
+let listingsRequest = 0;
+let listingsController = null;
+let searchTimer = null;
+
+function setListingsStatus(message) {
+  const status = document.getElementById('listingsStatus');
+  if (status) status.textContent = message;
+}
+
+function scheduleSearch(value) {
+  currentQuery = value.trim();
+  for (const id of ['searchInput', 'mobileSearchInput']) {
+    const input = document.getElementById(id);
+    if (input && input.value !== value) input.value = value;
+  }
+  clearTimeout(searchTimer);
+  // Invalidate pending responses as soon as the query changes.
+  listingsRequest++;
+  listingsController?.abort();
+  searchTimer = setTimeout(renderProducts, 250);
+}
 
 /* ═══ FILTERS ═══ */
 function filterCat(btn) {
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  clearTimeout(searchTimer);
+  document.querySelectorAll('.cat-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
   btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
   activeCategory = btn.dataset.cat;
   const h = document.getElementById('productsHeading');
   if (h) h.textContent = activeCategory === 'All' ? 'All Listings' : activeCategory + ' Listings';
@@ -20,12 +43,10 @@ function filterCat(btn) {
 }
 
 function doSearch() {
-  currentQuery = document.getElementById('searchInput')?.value.trim() || '';
-  renderProducts();
+  scheduleSearch(document.getElementById('searchInput')?.value || '');
 }
 function doMobileSearch() {
-  currentQuery = document.getElementById('mobileSearchInput')?.value.trim() || '';
-  renderProducts();
+  scheduleSearch(document.getElementById('mobileSearchInput')?.value || '');
 }
 function toggleMobileSearch() {
   const bar = document.getElementById('mobileSearchBar');
@@ -37,13 +58,16 @@ function toggleMobileSearch() {
 async function renderProducts() {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
+  const sequence = ++listingsRequest;
+  listingsController?.abort();
+  const controller = new AbortController();
+  listingsController = controller;
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  grid.setAttribute('aria-busy', 'true');
+  setListingsStatus('Finding your next great exchange…');
 
   // Loading state
-  grid.innerHTML = `
-    <div class="products-empty">
-      <div class="empty-icon" style="font-size:2rem;">⏳</div>
-      <div class="empty-title">Loading listings…</div>
-    </div>`;
+  grid.innerHTML = '<div class="listing-skeleton" aria-hidden="true"></div>'.repeat(6);
 
   try {
     // Build query params
@@ -53,14 +77,22 @@ async function renderProducts() {
     params.set('page_size', '50');
 
     const token = localStorage.getItem('barterToken');
-    const res = await fetch(`${API_BASE_URL}/posts/?${params.toString()}`, {
+    let res = await fetch(`${API_BASE_URL}/posts/?${params.toString()}`, {
+      signal: controller.signal,
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
+    // A stale login must not prevent visitors from browsing public listings.
+    if (res.status === 401 && token) {
+      res = await fetch(`${API_BASE_URL}/posts/?${params.toString()}`, {signal: controller.signal});
+    }
     if (!res.ok) throw new Error('Server error: ' + res.status);
 
     const data = await res.json();
-    const list = data.posts || [];
+    if (sequence !== listingsRequest) return;
+    const list = Array.isArray(data) ? data : data.posts;
+    if (!Array.isArray(list)) throw new Error('Unexpected listings response');
     cachedPosts = list;   // cache kar lo
+    setListingsStatus(list.length ? `${list.length} ${list.length === 1 ? 'listing' : 'listings'}${currentQuery ? ` matching “${currentQuery}”` : ' available to explore'}.` : 'No matching listings available.');
 
     // Fix image URLs (relative → absolute)
     list.forEach(p => {
@@ -78,8 +110,8 @@ async function renderProducts() {
       grid.innerHTML = `
         <div class="products-empty">
           <div class="empty-icon">📦</div>
-          <div class="empty-title">${currentQuery ? 'No results found' : 'No listings yet'}</div>
-          <div class="empty-sub">${currentQuery ? 'Try a different keyword or category.' : 'Be the first to list an item!'}</div>
+          <div class="empty-title">${currentQuery || activeCategory !== 'All' ? 'No matching listings' : 'No listings yet'}</div>
+          <div class="empty-sub">${currentQuery || activeCategory !== 'All' ? 'Try another category or a different search.' : 'Good things deserve a second life. Be the first to share yours.'}</div>
           <a href="dashboard.html?section=addListing" class="btn-list-first">List an Item</a>
         </div>`;
       return;
@@ -95,13 +127,20 @@ async function renderProducts() {
     }
 
   } catch (err) {
+    if (sequence !== listingsRequest) return;
     console.error('Failed to load posts:', err);
+    cachedPosts = [];
+    setListingsStatus('Listings are temporarily unavailable.');
     grid.innerHTML = `
       <div class="products-empty">
         <div class="empty-icon">⚠️</div>
         <div class="empty-title">Could not load listings</div>
-        <div class="empty-sub">Make sure the server is running. <a href="#" onclick="renderProducts();return false;">Retry</a></div>
+        <div class="empty-sub">We couldn’t reach the marketplace. Please try again in a moment.</div>
+        <button type="button" class="btn-list-first" onclick="renderProducts()">Try Again</button>
       </div>`;
+  } finally {
+    clearTimeout(timeout);
+    if (sequence === listingsRequest) grid.setAttribute('aria-busy', 'false');
   }
 }
 
@@ -119,7 +158,7 @@ function getDisplayValue(p) {
 function cardHTML(p) {
   const hasImg = p.images && p.images.length;
   const imgEl  = hasImg
-    ? `<img src="${p.images[0]}" alt="${esc(p.title)}" class="pc-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    ? `<img src="${esc(p.images[0])}" alt="${esc(p.title)}" class="pc-img" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
   const phEl = `<div class="pc-img-placeholder"${hasImg ? ' style="display:none"' : ''}><i class="bi bi-image"></i></div>`;
 
@@ -135,7 +174,7 @@ function cardHTML(p) {
       </div>
       <div class="pc-body">
         <div class="pc-owner">
-          <div class="pc-owner-avatar">${sellerInit}</div>
+          <div class="pc-owner-avatar">${esc(sellerInit)}</div>
           <span class="pc-owner-name">${esc(sellerName)}</span>
           ${dateStr ? `<span class="pc-owner-date">${dateStr}</span>` : ''}
         </div>
@@ -413,7 +452,6 @@ async function submitOffer(e) {
 }
 
 /* ═══ AUTH ═══ */
-const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function resolveProfileImageUrl(src) {
   if (!src) return null;
@@ -423,11 +461,12 @@ function resolveProfileImageUrl(src) {
 }
 
 function getUser() {
-  const raw = JSON.parse(
+  let raw;
+  try { raw = JSON.parse(
     localStorage.getItem('barterUser') ||
     localStorage.getItem('bartifyUser') ||
     'null'
-  );
+  ); } catch (_) { return null; }
 
   if (!raw) return null;
 
@@ -469,9 +508,15 @@ function checkLoginState() {
     showToast('Session expired. Please log in again.', 'error');
   }
 
-  const user = getUser();
+  const user = localStorage.getItem('barterToken') ? getUser() : null;
   const out  = document.getElementById('navLoggedOut');
   const inn  = document.getElementById('navLoggedIn');
+  const signedIn = Boolean(user);
+  document.body.classList.toggle('is-signed-in', signedIn);
+  const hero = document.getElementById('homeHero');
+  const community = document.getElementById('communityCta');
+  if (hero) hero.hidden = signedIn;
+  if (community) community.hidden = signedIn;
 
   if (user) {
     out.style.setProperty('display','none','important');
@@ -581,16 +626,29 @@ window.fetch = function(...args) {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Keep public browsing independent of account verification availability.
+  checkLoginState();
+  renderProducts();
+  const navbar = document.querySelector('.navbar');
+  const categories = document.querySelector('.categories');
+  const measureStickyRows = () => {
+    if (navbar) document.documentElement.style.setProperty('--home-nav-height', `${navbar.getBoundingClientRect().height}px`);
+    if (categories) document.documentElement.style.setProperty('--home-category-height', `${categories.getBoundingClientRect().height}px`);
+  };
+  measureStickyRows();
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(measureStickyRows);
+    if (navbar) observer.observe(navbar);
+    if (categories) observer.observe(categories);
+  } else { window.addEventListener('resize', measureStickyRows); }
   try {
     const user = await BartifySession.resolve({memberOnly: true, optional: true});
     if (!user && localStorage.getItem('barterToken')) return;
   } catch (err) {
     showToast(err.message, 'error');
-    return;
   }
   checkLoginState();
   startHomeMessageNotifications();
-  renderProducts();
 
   const justAdded  = localStorage.getItem('bartifyJustAdded');
   const justEdited = localStorage.getItem('bartifyJustEdited');
@@ -703,6 +761,6 @@ function startHomeMessageNotifications() {
   homeMessageTimer = setInterval(refreshHomeUnread, 15000);
 }
 window.addEventListener('focus', refreshHomeUnread);
-window.addEventListener('storage', event => { if (event.key === 'barterToken' || event.key === null) startHomeMessageNotifications(); });
+window.addEventListener('storage', event => { if (['barterToken', 'barterUser', 'bartifyUser', null].includes(event.key)) { checkLoginState(); startHomeMessageNotifications(); } });
 window.addEventListener('pagehide', stopHomeMessageNotifications);
 window.addEventListener('pageshow', event => { if (event.persisted) startHomeMessageNotifications(); });

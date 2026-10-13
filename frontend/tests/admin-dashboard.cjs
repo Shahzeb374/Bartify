@@ -7,7 +7,7 @@ const base = 'http://127.0.0.1:8011';
   const browser = await chromium.launch({headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined});
   try {
     const context = await browser.newContext();
-    await context.route('http://127.0.0.1:8000/**', route => route.continue({url: route.request().url().replace('http://127.0.0.1:8000', base)}));
+    await context.route('**/config.js', route => route.fulfill({contentType:'application/javascript', body:`const API_BASE_URL = '${base}';`}));
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

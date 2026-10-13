@@ -1,0 +1,54 @@
+/* Bartify's shared Eco-Exchange palette. Page styles own their layouts. */
+:root {
+  --eco-primary: #2D6A4F;
+  --eco-primary-dark: #1B4332;
+  --eco-tertiary: #D8F3DC;
+  --eco-primary-soft: #EDF8EF;
+  --eco-background: #F5F7F5;
+  --eco-cream: #F8FAF5;
+  --eco-surface: #EFF3F0;
+  --eco-border: #DFE6E0;
+  --eco-border-strong: #B8C9BC;
+  --eco-neutral: #333333;
+  --eco-muted: #626D65;
+  --eco-faint: #6C786F;
+  --eco-secondary: #4361EE;
+  --eco-secondary-soft: #EEF1FF;
+  --bs-primary: var(--eco-primary);
+  --bs-primary-rgb: 45, 106, 79;
+  --bs-secondary: var(--eco-secondary);
+  --bs-secondary-rgb: 67, 97, 238;
+  --bs-body-color: var(--eco-neutral);
+  --bs-body-bg: var(--eco-background);
+  --bs-link-color: var(--eco-primary);
+  --bs-link-hover-color: var(--eco-primary-dark);
+  --bs-border-color: var(--eco-border);
+  --bs-body-font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+}
+body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font-family: inherit; }
+[hidden] { display: none !important; }
+::selection { background: var(--eco-tertiary); color: var(--eco-primary-dark); }
+input[type="checkbox"], input[type="radio"], progress { accent-color: var(--eco-primary); }
+:is(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--eco-secondary); outline-offset: 3px; }
+.form-control:focus, .form-select:focus { border-color: var(--eco-primary); box-shadow: 0 0 0 .2rem rgba(45,106,79,.12); }
+.btn-primary {
+  --bs-btn-bg: var(--eco-primary); --bs-btn-border-color: var(--eco-primary);
+  --bs-btn-hover-bg: var(--eco-primary-dark); --bs-btn-hover-border-color: var(--eco-primary-dark);
+  --bs-btn-active-bg: var(--eco-primary-dark); --bs-btn-active-border-color: var(--eco-primary-dark);
+  --bs-btn-disabled-bg: var(--eco-primary); --bs-btn-disabled-border-color: var(--eco-primary);
+  --bs-btn-focus-shadow-rgb: 45,106,79;
+}
+.theme-footer { background: var(--eco-primary-dark); color: #D8E8DB; padding: 24px 32px; }
+.theme-footer-inner { max-width: 1200px; margin: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
+.theme-footer-brand { color: white; font-size: 19px; font-weight: 800; text-decoration: none; }
+.theme-footer-links { display: flex; gap: 22px; flex-wrap: wrap; margin-left: auto; }
+.theme-footer a:not(.theme-footer-brand) { color: #D8E8DB; font-size: 12px; text-decoration: none; }
+.theme-footer a:hover { color: white; text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 600px) {
+  .theme-footer { padding: 24px 20px; }
+  .theme-footer-links { margin-left: 0; gap: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

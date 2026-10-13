@@ -6,7 +6,8 @@ const base = 'http://127.0.0.1:8011';
   const browser = await chromium.launch({headless:true, channel:process.env.PLAYWRIGHT_CHANNEL || 'msedge'});
   try {
     const context = await browser.newContext();
-    await context.route('http://127.0.0.1:8000/**', route => route.continue({url:route.request().url().replace('http://127.0.0.1:8000', base)}));
+    await context.route('**/config.js', route => route.fulfill({contentType:'application/javascript', body:`const API_BASE_URL = '${base}';`}));
+    await context.routeWebSocket('ws://127.0.0.1:8011/**', socket => socket.close());
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -28,7 +29,7 @@ const base = 'http://127.0.0.1:8011';
         assert.equal(result.status(), 200);
       }
     }
-    const picture = await page.request.put(base + '/users/profile', {headers:auth(seller), multipart:{user_image:{name:'avatar.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5p8AAAAASUVORK5CYII=', 'base64')}}});
+    const picture = await page.request.put(base + '/users/profile', {headers:auth(seller), multipart:{contact:'+92 300 1234567',user_image:{name:'avatar.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5p8AAAAASUVORK5CYII=', 'base64')}}});
     assert.equal(picture.status(), 200);
     await page.goto(base + '/index.html');
     await page.locator('.pc-view-btn').first().click();

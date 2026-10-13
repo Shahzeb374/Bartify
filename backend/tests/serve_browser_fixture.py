@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 from pathlib import Path
+from app.routes import messages
 
 if __name__ == "__main__":
     AdminWorkflowTests.setUpClass()
@@ -14,6 +15,7 @@ if __name__ == "__main__":
     fixture.setUp()
     try:
         app = fixture.client.app
+        app.include_router(messages.router, prefix="/messages")
         app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
         for number in range(22):
             fixture.submit(f"Browser test laptop {number + 1:02}")

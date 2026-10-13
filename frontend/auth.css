@@ -1,0 +1,56 @@
+/* Login, signup and recovery share the supplied public pages' visual language. */
+body.auth-page { display: block; padding: 0; background: var(--eco-cream); color: var(--eco-neutral); background-image: none; }
+.auth-header { background: rgba(255,255,255,.96); border-bottom: 1px solid var(--eco-border); }
+.auth-header-inner { max-width: 1200px; min-height: 80px; margin: auto; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.auth-brand { display: inline-flex; gap: 10px; align-items: center; font-size: 25px; font-weight: 800; letter-spacing: -.8px; color: var(--eco-primary); text-decoration: none; }
+.auth-brand-mark { width: 40px; height: 40px; display: grid; place-items: center; background: linear-gradient(135deg,#377E58,var(--eco-primary-dark)); border-radius: 12px; color: white; font-size: 28px; font-weight: 500; }
+.auth-nav { display: flex; align-items: center; gap: 24px; }
+.auth-nav a { font-size: 12px; font-weight: 600; text-decoration: none; color: var(--eco-muted); }
+.auth-nav a:hover { color: var(--eco-primary); }
+.auth-layout { max-width: 1180px; min-height: calc(100vh - 160px); margin: auto; padding: 58px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 76px; align-items: center; }
+.auth-story { padding-block: 24px; }
+.auth-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1.8px; color: var(--eco-primary); margin-bottom: 16px; }
+.auth-story h2 { font-size: clamp(34px,3.7vw,49px); font-weight: 800; line-height: 1.15; letter-spacing: -2px; margin-bottom: 20px; }
+.auth-story h2 span { color: var(--eco-primary); }
+.auth-story > p:not(.auth-eyebrow) { font-size: 14px; line-height: 1.8; color: var(--eco-muted); max-width: 390px; }
+.auth-art { width: 100%; height: auto; margin: 10px 0 8px; }
+.auth-story-note { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--eco-primary); }
+.auth-story-note span { font-size: 24px; }
+.auth-panel { min-width: 0; }
+.auth-panel .page-title { text-align: left; font-size: 29px; line-height: 1.2; letter-spacing: -1px; margin-bottom: 10px; }
+.auth-panel .page-subtitle { text-align: left; font-size: 13px; line-height: 1.7; margin-bottom: 24px; }
+.auth-page .login-card, .auth-page .signup-card, .auth-page .reset-card { width: 100%; max-width: none; padding: 30px; margin-bottom: 20px; border: 1px solid var(--eco-border); border-radius: 22px; box-shadow: 0 14px 42px rgba(27,67,50,.045); }
+.auth-page .form-label { font-size: 12px; margin-bottom: 8px; }
+.auth-page .form-control { background: #FAFCF9; border-width: 1px; min-height: 46px; font-size: 13px; border-radius: 10px; }
+.auth-page .form-control::placeholder { color: #7A857C; }
+.auth-page .form-control:focus { background: white; box-shadow: 0 0 0 3px rgba(45,106,79,.1); }
+.auth-page .btn-signin, .auth-page .btn-create { border-radius: 11px; font-size: 13px; min-height: 48px; font-weight: 700; }
+.auth-page .forgot-link, .auth-page .bottom-text a { color: var(--eco-secondary); font-size: 12px; }
+.auth-page .bottom-text { font-size: 12px; margin: 0; }
+.auth-page .error-text { font-size: 11px; min-height: 14px; }
+.auth-page .hint-text, .auth-page .label-optional { font-size: 10px; }
+.auth-page .upload-icon-btn { background: var(--eco-surface); border-radius: 12px; }
+.auth-page .upload-icon-btn::before { content: '⇄'; color: var(--eco-primary); font-size: 27px; }
+.auth-page .upload-icon-btn:has(img)::before { content: none; }
+.auth-page .reset-card .brand-row { display: none; }
+.auth-page .reset-card .page-title { font-size: 27px; }
+.auth-page .reset-card .stepper { margin-top: 24px; }
+.auth-page .step-circle.active { background: var(--eco-primary); }
+.auth-page .step-label.active { color: var(--eco-primary); }
+.auth-page .reset-card .form-input::placeholder { color: #7A857C; }
+.auth-page .reset-card .form-input, .auth-page .otp-input { background: #FAFCF9; }
+@media (max-width: 900px) {
+  .auth-layout { gap: 38px; padding: 38px 26px; }
+  .auth-story h2 { font-size: 37px; }
+  .auth-page .login-card, .auth-page .signup-card, .auth-page .reset-card { padding: 24px; }
+}
+@media (max-width: 700px) {
+  .auth-header-inner { min-height: 72px; padding: 14px 20px; gap: 14px; }
+  .auth-brand { font-size: 22px; }
+  .auth-nav { gap: 16px; }
+  .auth-nav a:first-child { display: none; }
+  .auth-layout { grid-template-columns: 1fr; gap: 0; padding: 36px 20px 42px; max-width: 540px; }
+  .auth-story { display: none; }
+  .auth-panel .page-title { font-size: 28px; }
+  .auth-panel .page-subtitle { margin-bottom: 22px; }
+}

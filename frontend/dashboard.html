@@ -2,15 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="config.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bartify – Dashboard</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="dashboard.css"/>
+<link rel="stylesheet" href="workspace-theme.css">
 </head>
-<body>
+<body class="member-app">
 
 <!-- ════ SIDEBAR ════ -->
 <nav id="sidebar">
@@ -80,16 +83,16 @@
 
 <!-- ════ HEADER ════ -->
 <header id="header">
-  <button class="header-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+  <button class="header-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation"><i class="fa-solid fa-bars"></i></button>
   <div class="header-title" id="headerTitle">Dashboard</div>
   <div class="header-actions">
-    <a href="index.html" class="btn-home"><i class="fa-solid fa-house"></i> Home</a>
-    <button class="btn-msg" onclick="openMessages()" style="position:relative;">
-      <i class="fa-solid fa-comment-dots"></i> Messages
+    <a href="index.html" class="btn-home" aria-label="Home"><i class="fa-solid fa-house"></i> <span class="header-action-label">Home</span></a>
+    <button class="btn-msg" onclick="openMessages()" style="position:relative;" aria-label="Messages">
+      <i class="fa-solid fa-comment-dots"></i> <span class="header-action-label">Messages</span>
       <span class="nav-badge msg-btn-badge" id="msgBtnBadge" style="display:none;">0</span>
     </button>
     <div class="profile-dropdown dropdown">
-      <button class="profile-btn dropdown-toggle" id="headerProfileBtn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <button class="profile-btn dropdown-toggle" id="headerProfileBtn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
         <i class="fa-solid fa-user"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end">
@@ -169,10 +172,10 @@
       <!-- ── PRODUCT IMAGES ── -->
       <div class="ali-section">
         <div class="ali-section-title">
-          <i class="fa-regular fa-image"></i> Product Images
+          <i class="fa-regular fa-image"></i> Product Images <span class="text-danger">*</span>
         </div>
         <div class="upload-grid" id="uploadGrid"></div>
-        <p class="upload-note">Upload up to 4 images. First image will be the cover photo.</p>
+        <p class="upload-note">Upload at least 1 image, up to 4. First image will be the cover photo.</p>
       </div>
 
       <!-- ── PRODUCT DETAILS ── -->
@@ -418,8 +421,8 @@
             <p style="font-size:12px;color:var(--text-light);margin-top:5px;margin-bottom:0;">Email address cannot be changed.</p>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Phone Number</label>
-            <input type="tel" class="form-control" id="epPhone" placeholder="+92 300 0000000">
+            <label class="form-label" for="epPhone">Contact Number <span class="text-danger">*</span></label>
+            <input type="tel" class="form-control" id="epPhone" placeholder="+92 300 0000000" maxlength="20" required>
           </div>
           <div class="col-12 d-flex gap-3 flex-wrap">
             <button type="submit" class="btn-primary-sm"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
@@ -461,6 +464,7 @@
     </div>
   </section>
 
+<nav class="workspace-links" aria-label="Helpful links"><a href="about-us.html">About Us</a><a href="how-it-works.html">How It Works</a><a href="privacy-policy.html">Privacy Policy</a><a href="terms-conditions.html">Terms &amp; Conditions</a></nav>
 </main>
 
 <!-- ════ MESSAGE WIDGET ════ -->

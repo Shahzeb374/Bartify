@@ -18,6 +18,16 @@ UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 MIN_DESCRIPTION_WORDS = 10
 MAX_DESCRIPTION_WORDS = 25
 
+async def _require_post_images(images: List[UploadFile]) -> List[UploadFile]:
+    valid_images = [image for image in (images or []) if image and image.filename]
+    if not valid_images:
+        raise HTTPException(status_code=400, detail="Upload at least one product image")
+    for image in valid_images:
+        if not await image.read(1):
+            raise HTTPException(status_code=400, detail="Product images cannot be empty files")
+        await image.seek(0)
+    return valid_images
+
 
 def _validate_description(description: str) -> str:
     cleaned = description.strip()
@@ -191,6 +201,10 @@ async def update_post(
     if post.user_id != current_user.u_id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this post")
 
+    valid_images = await _require_post_images(images) if images else []
+    if not valid_images and not any(image.status == 1 for image in post.images):
+        raise HTTPException(status_code=400, detail="Upload at least one product image")
+
     # Update text fields
     if title:              post.title          = title.strip()
     if description is not None:
@@ -213,7 +227,6 @@ async def update_post(
         post.category_id = category_row.c_id
 
     # Replace images if new ones uploaded
-    valid_images = [img for img in (images or []) if img and img.filename]
     new_image_urls: list[str] = []
 
     if valid_images:
@@ -287,10 +300,11 @@ async def create_post(
     price_from: float = Form(...),
     price_to: float = Form(...),
     condition_score: int = Form(...),
-    images: List[UploadFile] = File(default=[]),
+    images: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    images = await _require_post_images(images)
     if price_from > price_to:
         raise HTTPException(status_code=400, detail="Invalid price range")
 

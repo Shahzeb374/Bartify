@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app import models
+from app.bootstrap import ensure_default_roles
 from app.routes import users, posts, offers, messages, admin, reports
 from fastapi.staticfiles import StaticFiles
 import os
@@ -25,6 +26,7 @@ app.add_middleware(
 
 # DB tables
 models.Base.metadata.create_all(bind=engine)
+ensure_default_roles(engine)
 
 # Static files for profile images
 os.makedirs("uploads", exist_ok=True)

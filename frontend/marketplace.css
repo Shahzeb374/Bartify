@@ -1,19 +1,19 @@
 
     :root {
-      --brand-blue:       #2563EB;
-      --brand-blue-hover: #1d4ed8;
-      --brand-icon-bg:    #3B82F6;
-      --text-dark:        #0f172a;
-      --text-muted:       #64748b;
-      --page-bg:          #f8fafc;
+      --brand-blue:       var(--eco-primary);
+      --brand-blue-hover: var(--eco-primary-dark);
+      --brand-icon-bg:    var(--eco-primary);
+      --text-dark:        var(--eco-neutral);
+      --text-muted:       var(--eco-muted);
+      --page-bg:          var(--eco-background);
       --card-bg:          #ffffff;
-      --border:           #e2e8f0;
+      --border:           var(--eco-border);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--page-bg);
       color: var(--text-dark);
       overflow-x: hidden;
@@ -45,7 +45,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(59,130,246,0.30);
+      box-shadow: 0 4px 12px rgba(45,106,79,0.30);
       transition: opacity 0.2s, transform 0.2s;
     }
     .nav-logo-icon:hover { opacity: 0.85; transform: scale(1.05); }
@@ -95,10 +95,10 @@
     .btn-get-started:hover, .btn-signup:hover {
       background: var(--brand-blue-hover);
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(37,99,235,0.28);
+      box-shadow: 0 4px 14px rgba(45,106,79,0.28);
     }
     .navbar-toggler {
-      border: 1.5px solid #e2e8f0;
+      border: 1.5px solid var(--eco-border);
       border-radius: 8px;
       padding: 6px 10px;
     }
@@ -139,7 +139,7 @@
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #94a3b8;
+      color: var(--eco-faint);
       font-size: 1rem;
       z-index: 2;
     }
@@ -149,7 +149,7 @@
       border: 1.5px solid var(--border);
       border-radius: 12px;
       font-size: 0.95rem;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       color: var(--text-dark);
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
@@ -157,9 +157,9 @@
     }
     .search-input:focus {
       border-color: var(--brand-blue);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.10);
     }
-    .search-input::placeholder { color: #b0b7c3; }
+    .search-input::placeholder { color: var(--eco-faint); }
 
     /* ══════════════════════════════
        CATEGORY TABS
@@ -188,11 +188,11 @@
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.2s, color 0.2s;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .cat-btn:hover { background: #f1f5f9; color: var(--text-dark); }
+    .cat-btn:hover { background: var(--eco-surface); color: var(--text-dark); }
     .cat-btn.active {
-      background: #EFF6FF;
+      background: var(--eco-primary-soft);
       color: var(--brand-blue);
       font-weight: 600;
     }
@@ -244,7 +244,7 @@
       width: 100%;
       height: 200px;
       overflow: hidden;
-      background: #f1f5f9;
+      background: var(--eco-surface);
     }
     .card-img-wrap img {
       width: 100%;
@@ -282,7 +282,7 @@
       border-radius: 50%;
       border: none;
       background: rgba(255,255,255,0.85);
-      color: #334155;
+      color: var(--eco-neutral);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -373,7 +373,7 @@
     /* Category Tag */
     .card-tag {
       display: inline-block;
-      background: #f1f5f9;
+      background: var(--eco-surface);
       color: var(--text-muted);
       font-size: 0.78rem;
       font-weight: 500;
@@ -402,7 +402,7 @@
       width: 100%;
       cursor: pointer;
       transition: background 0.2s, transform 0.15s;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       text-align: center;
       text-decoration: none;
       display: block;
@@ -422,7 +422,7 @@
       padding: 60px 20px;
       display: none;
     }
-    .no-results i { font-size: 3rem; color: #cbd5e1; margin-bottom: 16px; }
+    .no-results i { font-size: 3rem; color: var(--eco-border-strong); margin-bottom: 16px; }
     .no-results h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
     .no-results p { font-size: 0.9rem; color: var(--text-muted); }
 
@@ -467,7 +467,7 @@
     .modal-product-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 10px; }
     .modal-desc { font-size: 0.95rem; color: var(--text-dark); line-height: 1.7; margin-bottom: 16px; }
     .modal-info-row { display: grid; grid-template-columns: repeat(2,minmax(150px,1fr)); gap: 12px 18px; margin-bottom: 20px; }
-    .modal-info-item label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 3px; }
+    .modal-info-item label { font-size: 0.75rem; font-weight: 600; color: var(--eco-faint); text-transform: uppercase; display: block; margin-bottom: 3px; }
     .modal-info-item span { font-size: 0.92rem; font-weight: 600; color: var(--text-dark); }
     .modal-actions { display: flex; gap: 12px; margin-bottom: 16px; }
     .btn-favorite {
@@ -509,12 +509,12 @@
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       transition: background 0.2s;
     }
     .btn-modal-trade:hover { background: var(--brand-blue-hover); }
     .btn-modal-close {
-      background: #f1f5f9;
+      background: var(--eco-surface);
       color: var(--text-dark);
       border: none;
       border-radius: 10px;
@@ -522,7 +522,7 @@
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
     /* ══════════════════════════════
@@ -533,7 +533,7 @@
       bottom: 28px;
       left: 50%;
       transform: translateX(-50%) translateY(60px);
-      background: #1e293b;
+      background: var(--eco-neutral);
       color: #fff;
       padding: 12px 28px;
       border-radius: 50px;
@@ -543,7 +543,7 @@
       pointer-events: none;
       z-index: 9999;
       white-space: nowrap;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -555,4 +555,16 @@
       .listings-section { padding: 24px 0 48px; }
       .card-img-wrap { height: 170px; }
     }
-  
+
+
+/* Eco-Exchange finish, shared with the supplied public pages. */
+.navbar .container-fluid { max-width:1200px; margin-inline:auto; }
+.nav-logo-icon { background:linear-gradient(135deg,#377E58,var(--eco-primary-dark)); font-size:28px; color:#fff; }
+.nav-brand-text { color:var(--eco-primary); font-weight:800; letter-spacing:-.7px; }
+.navbar-nav .nav-link { font-size:13px; border-radius:30px; }
+.navbar-nav .nav-link-active { background:var(--eco-primary-soft); }
+.page-header { background:radial-gradient(ellipse at 76% 35%,#D7E5BC 0,transparent 52%),linear-gradient(115deg,#FAFAF5,#F0F3E5 65%,#E6EDD9); padding:56px 0 42px; }
+.page-header h1 { color:var(--eco-primary-dark); letter-spacing:-1.3px; }
+.search-input { border-radius:30px; }
+.product-card { border-radius:19px; box-shadow:0 4px 18px rgba(27,67,50,.035); }
+.cat-btn { border-radius:30px; }

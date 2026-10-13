@@ -1,6 +1,3 @@
-// ── FastAPI URL ────────────────────────────────────────────
-const API_BASE_URL = 'http://127.0.0.1:8000';
-// const API_BASE_URL = 'http://PC-IP:8000';
 const SIGNUP_PATH = '/users/signup';
 const LOGIN_PATH = '/users/login';
 
@@ -32,6 +29,7 @@ function clearError(inputId, errorId) {
 function clearAll() {
   clearError('fullName', 'fullNameError');
   clearError('email', 'emailError');
+  clearError('contact', 'contactError');
   clearError('password', 'passwordError');
   clearError('confirmPassword', 'confirmPasswordError');
   clearError('photoInput', 'photoError');
@@ -52,12 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fullName = document.getElementById('fullName');
   const email = document.getElementById('email');
+  const contact = document.getElementById('contact');
   const password = document.getElementById('password');
   const confirmPassword = document.getElementById('confirmPassword');
   const photoInput = document.getElementById('photoInput');
 
   if (fullName) fullName.addEventListener('input', () => clearError('fullName', 'fullNameError'));
   if (email) email.addEventListener('input', () => clearError('email', 'emailError'));
+  if (contact) contact.addEventListener('input', () => clearError('contact', 'contactError'));
   if (password) password.addEventListener('input', () => clearError('password', 'passwordError'));
   if (confirmPassword) confirmPassword.addEventListener('input', () => clearError('confirmPassword', 'confirmPasswordError'));
 
@@ -142,6 +142,14 @@ async function validateForm(event) {
     isValid = false;
   }
 
+  if (!contact) {
+    showError('contact', 'contactError', 'Contact number is required.');
+    isValid = false;
+  } else if (contact.length > 20) {
+    showError('contact', 'contactError', 'Contact number must be 20 characters or fewer.');
+    isValid = false;
+  }
+
   if (confirmPassword === '') {
     showError('confirmPassword', 'confirmPasswordError', 'Please confirm your password.');
     isValid = false;
@@ -157,7 +165,7 @@ async function validateForm(event) {
     formData.append('name', fullName);
     formData.append('email', email);
     formData.append('password', password);
-    formData.append('contact', contact || '');
+    formData.append('contact', contact);
     if (profilePictureFile) formData.append('user_image', profilePictureFile);
 
     const signupRes = await fetch(`${API_BASE_URL}${SIGNUP_PATH}`, {

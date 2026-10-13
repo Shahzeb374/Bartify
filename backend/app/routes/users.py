@@ -14,16 +14,23 @@ router = APIRouter()
 UPLOAD_DIR = "uploads/profiles"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+def _required_contact(contact: str) -> str:
+    contact = contact.strip()
+    if not contact:
+        raise HTTPException(status_code=400, detail="Contact number is required")
+    return contact
+
 # SIGNUP
 @router.post("/signup")
 async def signup(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    contact: str = Form(None),
+    contact: str = Form(..., min_length=1, max_length=20),
     user_image: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
+    contact = _required_contact(contact)
     existing = db.query(models.User).filter(models.User.email == email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
@@ -62,6 +69,7 @@ async def signup(
             "role_id": new_user.role_id,
             "name": new_user.name,
             "email": new_user.email,
+            "contact": new_user.contact,
             "picture": new_user.user_image
         }
     }
@@ -84,6 +92,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
             "role_id": db_user.role_id,
             "name": db_user.name,
             "email": db_user.email,
+            "contact": db_user.contact,
             "picture": db_user.user_image
         }
     }
@@ -103,15 +112,15 @@ def get_me(current_user: models.User = Depends(get_current_user)):
 @router.put("/profile")
 async def update_profile(
     name: str = Form(None),
-    contact: str = Form(None),
+    contact: str = Form(..., min_length=1, max_length=20),
     user_image: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    contact = _required_contact(contact)
     if name:
         current_user.name = name.strip()
-    if contact:
-        current_user.contact = contact.strip()
+    current_user.contact = contact
     
     if user_image:
         # ← Purani image delete karo

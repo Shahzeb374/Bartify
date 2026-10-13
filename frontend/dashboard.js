@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://127.0.0.1:8000';
-// const API_BASE_URL = 'http://192.168.100.6:8000';
 
 function resolveProfileImageUrl(src) {
   if (!src) return null;
@@ -737,7 +735,7 @@ function openOfferDetail(id, direction) {
     contextHTML = `
       <div class="pd-seller">
         <div class="pd-seller-av">${fromName.charAt(0).toUpperCase()}</div>
-        <div><div class="pd-seller-name">${esc(fromName)}</div><div style="font-size:.72rem;color:#9ca3af;">wants to trade for "${esc(o.post_title || '')}"</div></div>
+        <div><div class="pd-seller-name">${esc(fromName)}</div><div style="font-size:.72rem;color:var(--eco-faint);">wants to trade for "${esc(o.post_title || '')}"</div></div>
       </div>`;
     if (o.status === 'pending') {
       actionHTML = `
@@ -750,7 +748,7 @@ function openOfferDetail(id, direction) {
     contextHTML = `
       <div class="pd-seller">
         <div class="pd-seller-av"><i class="fa-solid fa-store" style="font-size:14px;"></i></div>
-        <div><div class="pd-seller-name">Offer for "${esc(o.post_title || '')}"</div><div style="font-size:.72rem;color:#9ca3af;">Owner: ${esc(o.post_owner_name || 'Bartify User')}</div></div>
+        <div><div class="pd-seller-name">Offer for "${esc(o.post_title || '')}"</div><div style="font-size:.72rem;color:var(--eco-faint);">Owner: ${esc(o.post_owner_name || 'Bartify User')}</div></div>
       </div>`;
   }
 
@@ -930,6 +928,16 @@ async function saveProfile(e) {
   const lastName  = document.getElementById('epLastName').value.trim();
   const phone     = document.getElementById('epPhone').value.trim();
   const fullName  = `${firstName} ${lastName}`.trim();
+
+  if (!phone) {
+    showToast('Contact number is required.', 'error');
+    document.getElementById('epPhone').focus();
+    return;
+  }
+  if (phone.length > 20) {
+    showToast('Contact number must be 20 characters or fewer.', 'error');
+    return;
+  }
 
   const formData = new FormData();
   formData.append('name', fullName);
@@ -1478,6 +1486,11 @@ function buildLocalProductFromBackend(post, fallback) {
 
 async function publishListing(e) {
   e.preventDefault();
+  const hasImage = uploadedImageFiles.some(file => file && file.size > 0) || (editingId && uploadedImages.some(Boolean));
+  if (!hasImage) {
+    showToast('Upload at least one product image.', 'error');
+    return;
+  }
   const title = document.getElementById('itemTitle').value.trim();
   const cat   = document.getElementById('itemCat').value;
   if (!title || !cat) { showToast('Please fill in Title and Category.','error'); return; }

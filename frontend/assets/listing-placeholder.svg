@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" role="img" aria-labelledby="title">
+  <title id="title">Listing image unavailable</title>
+  <rect width="600" height="320" fill="#EFF3F0"/>
+  <circle cx="300" cy="135" r="58" fill="#D8F3DC"/>
+  <g fill="none" stroke="#2D6A4F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="272" y="109" width="56" height="48" rx="7"/>
+    <circle cx="288" cy="124" r="5"/>
+    <path d="m276 152 15-15 10 10 10-21 13 26"/>
+  </g>
+  <text x="300" y="225" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#626D65">Image unavailable</text>
+</svg>

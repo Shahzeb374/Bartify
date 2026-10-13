@@ -25,7 +25,7 @@ class RoleResponse(RoleBase):
 class UserBase(BaseModel):
     name: str = Field(..., max_length=100)
     email: EmailStr
-    contact: Optional[str] = Field(None, max_length=20)
+    contact: str = Field(..., min_length=1, max_length=20)
     user_image: Optional[str] = None
 
 
@@ -39,12 +39,14 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
-    contact: Optional[str] = Field(None, max_length=20)
+    contact: str = Field(..., min_length=1, max_length=20)
     user_image: Optional[str] = None
     status: Optional[int] = None
 
 
 class UserResponse(UserBase):
+    # Existing accounts may predate the required signup contact.
+    contact: Optional[str] = None
     u_id: int
     role_id: int
     status: int

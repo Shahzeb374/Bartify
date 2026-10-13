@@ -1,0 +1,28 @@
+<svg viewBox="0 0 620 440" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="halo"><stop stop-color="#BCD4A4"/><stop offset="1" stop-color="#EDF3E4" stop-opacity="0"/></radialGradient>
+          <linearGradient id="book" x2="1" y2="1"><stop stop-color="#527659"/><stop offset="1" stop-color="#1B4332"/></linearGradient>
+          <linearGradient id="camera" x2="0" y2="1"><stop stop-color="#454B45"/><stop offset="1" stop-color="#171D19"/></linearGradient>
+          <radialGradient id="lens"><stop stop-color="#78A8AB"/><stop offset=".3" stop-color="#233D48"/><stop offset=".65" stop-color="#10232B"/><stop offset="1" stop-color="#466D66"/></radialGradient>
+          <filter id="shadow" x="-30%" y="-30%" width="170%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="12" flood-color="#1B4332" flood-opacity=".18"/></filter>
+        </defs>
+        <circle cx="324" cy="215" r="215" fill="url(#halo)"/><circle cx="328" cy="211" r="160" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="18"/>
+        <ellipse cx="303" cy="359" rx="224" ry="21" fill="#2D6A4F" opacity=".07"/>
+        <g transform="translate(68 193) rotate(-12 110 80)" filter="url(#shadow)">
+          <path d="M0 108L177 98 202 132 21 147Z" fill="#B98D56"/><path d="M20 122L199 111 199 129 21 140Z" fill="#F4EAD3"/><path d="M0 107L178 96 199 112 20 126Z" fill="#C8A776"/>
+          <path d="M5 71L173 67 196 100 22 115Z" fill="#263F3B"/><path d="M20 84L191 78 191 99 23 108Z" fill="#EEE8D6"/><path d="M5 71L174 65 191 80 21 94Z" fill="#405C50"/>
+          <path d="M13 19L168 10 184 80 22 91Z" fill="#173F31"/><path d="M21 72L180 63 180 80 25 88Z" fill="#E9DFCA"/><path d="M12 15L166 7 180 63 22 76Z" fill="url(#book)"/>
+          <path d="M29 26L153 19 161 54 36 62Z" fill="none" stroke="#BEBD83" stroke-width="1" opacity=".65"/>
+          <text x="96" y="40" text-anchor="middle" font-family="Georgia,serif" font-size="12" letter-spacing="2" fill="#DDD2A0">THE ART OF</text><text x="99" y="54" text-anchor="middle" font-family="Georgia,serif" font-size="12" letter-spacing="2" fill="#DDD2A0">LIVING</text>
+        </g>
+        <g transform="translate(345 151) rotate(9 105 90)" filter="url(#shadow)">
+          <path d="M15 32H53L65 12H120L135 32H183Q204 32 204 54V148Q204 167 182 167H20Q0 167 0 147V52Q0 32 15 32Z" fill="url(#camera)"/>
+          <rect x="160" y="43" width="34" height="114" rx="12" fill="#232B25"/><rect x="20" y="20" width="25" height="12" rx="5" fill="#252D27"/>
+          <rect x="71" y="20" width="43" height="14" rx="4" fill="#68726B"/><rect x="18" y="48" width="22" height="11" rx="3" fill="#D9DFCD"/>
+          <circle cx="101" cy="104" r="64" fill="#151C18" stroke="#555F55" stroke-width="4"/><circle cx="101" cy="104" r="51" fill="#303B34" stroke="#101813" stroke-width="5"/><circle cx="101" cy="104" r="40" fill="url(#lens)" stroke="#69796E" stroke-width="2"/><circle cx="101" cy="104" r="23" fill="#101E24"/><ellipse cx="87" cy="88" rx="11" ry="8" fill="#A4D3C0" opacity=".38"/><circle cx="116" cy="121" r="6" fill="#97B9B1" opacity=".2"/>
+          <text x="139" y="54" font-family="sans-serif" font-size="8" fill="#B8C6BA">BARTIFY</text>
+        </g>
+        <g fill="none" stroke="#689D5A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><path d="M269 145Q310 108 355 136M337 112L357 136 328 144"/><path d="M353 320Q317 349 278 322M286 347L276 322 305 314"/></g>
+        <g fill="#689D5A"><path d="M153 121Q139 71 202 56Q193 111 153 121Z"/><path d="M526 273Q521 232 565 217Q566 262 526 273Z"/></g>
+        <g stroke="#E5EFD9" stroke-width="2" opacity=".65"><path d="M154 121L191 70"/><path d="M527 271L557 228"/></g>
+      </svg>

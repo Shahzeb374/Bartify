@@ -1,7 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: 'Poppins', sans-serif;
-  background: #f8fafc;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--eco-background);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -19,7 +19,7 @@ body {
 }
 .logo-icon {
   width: 38px; height: 38px;
-  background: #2563eb;
+  background: var(--eco-primary);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: white; font-size: 1.1rem;
@@ -27,19 +27,19 @@ body {
 .logo-text {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--eco-neutral);
 }
 
 .page-title {
   font-size: 1.85rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--eco-neutral);
   text-align: center;
   margin-bottom: 6px;
 }
 .page-subtitle {
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--eco-muted);
   text-align: center;
   margin-bottom: 28px;
 }
@@ -51,38 +51,38 @@ body {
   width: 100%;
   max-width: 500px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eco-border);
   margin-bottom: 22px;
 }
 
 .form-label {
   font-size: 0.92rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--eco-neutral);
   margin-bottom: 7px;
 }
 .label-optional {
   font-weight: 400;
-  color: #94a3b8;
+  color: var(--eco-faint);
   font-size: 0.82rem;
 }
 .form-control {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.9rem;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--eco-border);
   border-radius: 10px;
   padding: 11px 16px;
-  color: #1e293b;
+  color: var(--eco-neutral);
   transition: border 0.2s;
 }
 .form-control:focus {
-  border-color: #2563eb;
+  border-color: var(--eco-primary);
   box-shadow: none;
 }
 
 /* Light placeholder */
 .form-control::placeholder {
-  color: #cbd5e1;
+  color: var(--eco-border-strong);
   font-weight: 400;
 }
 
@@ -93,7 +93,7 @@ body {
 
 .hint-text {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--eco-faint);
   margin-top: 5px;
 }
 
@@ -114,16 +114,16 @@ body {
 }
 .upload-icon-btn {
   width: 52px; height: 52px;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--eco-border);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  background: #f8fafc;
+  background: var(--eco-background);
   transition: border 0.2s;
   overflow: hidden;
   flex-shrink: 0;
 }
-.upload-icon-btn:hover { border-color: #2563eb; }
+.upload-icon-btn:hover { border-color: var(--eco-primary); }
 .upload-icon-btn svg { width: 22px; height: 22px; }
 .upload-icon-btn img {
   width: 100%; height: 100%;
@@ -131,24 +131,24 @@ body {
 }
 .btn-upload-photo {
   background: white;
-  border: 1.5px solid #e2e8f0;
-  font-family: 'Poppins', sans-serif;
+  border: 1.5px solid var(--eco-border);
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
   font-size: 0.88rem;
-  color: #1e293b;
+  color: var(--eco-neutral);
   padding: 10px 20px;
   border-radius: 10px;
   cursor: pointer;
   transition: border 0.2s;
 }
-.btn-upload-photo:hover { border-color: #2563eb; color: #2563eb; }
+.btn-upload-photo:hover { border-color: var(--eco-primary); color: var(--eco-primary); }
 
 .btn-create {
   width: 100%;
-  background: #2563eb;
+  background: var(--eco-primary);
   color: white;
   border: none;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
   font-size: 1rem;
   padding: 13px;
@@ -157,15 +157,15 @@ body {
   margin-top: 24px;
   transition: background 0.2s;
 }
-.btn-create:hover { background: #1d4ed8; }
+.btn-create:hover { background: var(--eco-primary-dark); }
 
 .bottom-text {
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--eco-muted);
   text-align: center;
 }
 .bottom-text a {
-  color: #2563eb;
+  color: var(--eco-primary);
   font-weight: 600;
   text-decoration: none;
 }

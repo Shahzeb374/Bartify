@@ -3,6 +3,7 @@
 All records and uploads are isolated from the configured PostgreSQL database.
 """
 import os
+import base64
 from pathlib import Path
 import sys
 import tempfile
@@ -14,6 +15,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET_KEY"] = "isolated-test-signing-key-with-at-least-32-characters"
 ORIGINAL_CWD = Path.cwd()
+IMAGE_BYTES = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5p8AAAAASUVORK5CYII=')
 UPLOADS = tempfile.TemporaryDirectory(prefix="bartify-tests-")
 os.chdir(UPLOADS.name)
 
@@ -24,6 +26,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from jose import jwt
 from app import models
+from app.bootstrap import ensure_default_roles
 from app.auth import create_access_token
 from app.moderation import classify_text
 from app.routes import admin, users, posts, offers, reports
@@ -77,7 +80,7 @@ class AdminWorkflowTests(unittest.TestCase):
             "description": "Selling my laptop in good condition with charger and original box for a fair barter exchange with another item.",
             "in_exchange_for": "Guitar", "category": "Electronics",
             "price_from": "500", "price_to": "1000", "condition_score": "8",
-        })
+        }, files=[('images', ('listing.png', IMAGE_BYTES, 'image/png'))])
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["post"]["status"], "pending")
         return response.json()["post"]["id"]
@@ -90,6 +93,118 @@ class AdminWorkflowTests(unittest.TestCase):
     def decide(self, post, decision="approve", user=1):
         return self.client.post(f'/admin/posts/{post["id"]}/decision', headers=self.headers(user),
                                 json={"decision": decision, "revision": post["revision"]})
+
+    def test_fresh_database_bootstrap_allows_member_signup(self):
+        with self.sessions() as db:
+            db.query(models.User).delete()
+            db.query(models.Role).delete()
+            db.commit()
+        ensure_default_roles(self.engine)
+        ensure_default_roles(self.engine)
+        response = self.client.post('/users/signup', data={
+            'name': 'New Member', 'email': 'new@example.com',
+            'password': 'Testing123!', 'role_id': '2', 'contact': '+92 300 1234567',
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['user']['role_id'], 1)
+        with self.sessions() as db:
+            self.assertEqual(db.query(models.Role).count(), 2)
+        me = self.client.get('/users/me', headers={
+            'Authorization': 'Bearer ' + response.json()['access_token'],
+        })
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.json()['role_id'], 1)
+
+    def test_signup_requires_contact_and_persists_trimmed_value(self):
+        data = {'name': 'New Member', 'email': 'contact@example.com', 'password': 'Testing123!'}
+        for value in (None, '', '   ', '1' * 21):
+            with self.subTest(contact=value):
+                fields = dict(data)
+                if value is not None:
+                    fields['contact'] = value
+                response = self.client.post('/users/signup', data=fields)
+                self.assertIn(response.status_code, (400, 422), response.text)
+                with self.sessions() as db:
+                    self.assertEqual(db.query(models.User).filter_by(email=data['email']).count(), 0)
+        response = self.client.post('/users/signup', data={**data, 'contact': '  +92 300 1234567  '})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['user']['contact'], '+92 300 1234567')
+        login = self.client.post('/users/login', json={'email': data['email'], 'password': data['password']})
+        self.assertEqual(login.json()['user']['contact'], '+92 300 1234567')
+
+    def test_profile_requires_contact_without_changing_account_on_failure(self):
+        with self.sessions() as db:
+            db.get(models.User, 2).contact = '+92 300 1234567'
+            db.commit()
+        for value in (None, '', '   ', '1' * 21):
+            with self.subTest(contact=value):
+                fields = {'name': 'Should not be saved'}
+                if value is not None:
+                    fields['contact'] = value
+                response = self.client.put('/users/profile', headers=self.headers(2), data=fields)
+                self.assertIn(response.status_code, (400, 422), response.text)
+                me = self.client.get('/users/me', headers=self.headers(2)).json()
+                self.assertEqual(me['name'], 'Seller')
+                self.assertEqual(me['contact'], '+92 300 1234567')
+        response = self.client.put('/users/profile', headers=self.headers(2), data={'contact': '  +92 301 1234567  '})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['user']['contact'], '+92 301 1234567')
+
+    def test_post_requires_nonempty_image_without_creating_records(self):
+        fields = {
+            'title': 'Missing photo', 'description': 'A good laptop with charger and original box ready for exchange.',
+            'in_exchange_for': 'Guitar', 'category': 'Electronics',
+            'price_from': '500', 'price_to': '1000', 'condition_score': '8',
+        }
+        before = set(Path('uploads/posts').rglob('*'))
+        for files in (None, [('images', ('empty.png', b'', 'image/png'))]):
+            response = self.client.post('/posts/', headers=self.headers(2), data=fields, files=files)
+            self.assertIn(response.status_code, (400, 422), response.text)
+        with self.sessions() as db:
+            self.assertEqual(db.query(models.Post).count(), 0)
+            self.assertEqual(db.query(models.ProductImage).count(), 0)
+        self.assertEqual(set(Path('uploads/posts').rglob('*')), before)
+        post_id = self.submit()
+        post = self.client.get('/posts/my', headers=self.headers(2)).json()['posts'][0]
+        self.assertEqual(post['id'], post_id)
+        self.assertEqual(len(post['images']), 1)
+        self.assertEqual(Path(post['images'][0].lstrip('/')).read_bytes(), IMAGE_BYTES)
+
+    def test_post_edit_keeps_photo_and_rejects_empty_replacement(self):
+        post_id = self.submit()
+        self.decide(self.queued()[0])
+        original = self.client.get('/posts/my', headers=self.headers(2)).json()['posts'][0]
+        response = self.client.put(f'/posts/{post_id}', headers=self.headers(2), data={'title': 'Do not save this'},
+                                   files=[('images', ('empty.png', b'', 'image/png'))])
+        self.assertEqual(response.status_code, 400, response.text)
+        unchanged = self.client.get('/posts/my', headers=self.headers(2)).json()['posts'][0]
+        self.assertEqual(unchanged['title'], original['title'])
+        self.assertEqual(unchanged['status'], 'active')
+        self.assertEqual(unchanged['images'], original['images'])
+        self.assertEqual(Path(original['images'][0].lstrip('/')).read_bytes(), IMAGE_BYTES)
+        response = self.client.put(f'/posts/{post_id}', headers=self.headers(2), data={'title': 'Keep original image'})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['post']['images'], original['images'])
+        with self.sessions() as db:
+            db.query(models.ProductImage).filter_by(product_id=post_id).delete()
+            db.commit()
+        response = self.client.put(f'/posts/{post_id}', headers=self.headers(2), data={'title': 'Still no image'})
+        self.assertEqual(response.status_code, 400, response.text)
+        response = self.client.put(f'/posts/{post_id}', headers=self.headers(2), data={'title': 'Photo supplied'},
+                                   files=[('images', ('replacement.png', IMAGE_BYTES, 'image/png'))])
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(len(response.json()['post']['images']), 1)
+
+    def test_bootstrap_preserves_existing_roles_and_users(self):
+        with self.sessions() as db:
+            db.get(models.Role, 1).role = 'User'
+            db.commit()
+        ensure_default_roles(self.engine)
+        with self.sessions() as db:
+            self.assertEqual(db.get(models.Role, 1).role, 'User')
+            self.assertEqual(db.query(models.Role).count(), 2)
+            self.assertEqual(db.get(models.User, 1).role_id, 2)
+            self.assertEqual(db.get(models.User, 2).role_id, 1)
 
     def test_real_model_label_mapping(self):
         self.assertEqual(classify_text("Selling my laptop, good condition, barter available")["label"], "clean")

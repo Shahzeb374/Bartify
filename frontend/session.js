@@ -1,6 +1,6 @@
 // Roles are always fetched from the server; localStorage is only a UI cache.
 window.BartifySession = (() => {
-  const api = 'http://127.0.0.1:8000';
+  const api = API_BASE_URL;
   function clear() {
     ['barterToken', 'barterUser', 'bartifyUser'].forEach(key => localStorage.removeItem(key));
   }

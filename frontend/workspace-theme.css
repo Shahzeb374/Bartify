@@ -1,0 +1,53 @@
+/* Finish the member and administrator workspaces with the public Eco theme. */
+.member-app, .admin-app { background: var(--eco-cream); }
+.member-app { --bg: var(--eco-cream); --radius: 18px; --header-h: 76px; }
+.admin-app { --bg: var(--eco-cream); --header-h: 76px; }
+.member-app .sidebar-logo-icon, .admin-app .brand-avatar { background: linear-gradient(135deg,#377E58,var(--eco-primary-dark)); border-radius: 12px; font-size: 25px; }
+.member-app .sidebar-logo-text, .admin-app .brand-name { color: var(--eco-primary); font-size: 23px; letter-spacing: -.8px; }
+.member-app #header, .admin-app .header { background: rgba(255,255,255,.96); border-bottom-color: var(--eco-border); backdrop-filter: blur(16px); }
+.member-app .nav-sub a { margin-right: 12px; border-radius: 0 24px 24px 0; }
+.member-app .nav-sub a.active { background: #EAF2E5; }
+.member-app .dash-welcome { padding: 28px; border: 1px solid #E1E8D9; border-radius: 22px; background: url('assets/exchange-scene.svg') no-repeat right 16px center / 210px auto, linear-gradient(115deg,#EDF3E6,#E1EAD5); }
+.member-app .dash-welcome h2, .member-app .dash-welcome p { max-width: calc(100% - 205px); }
+.member-app .dash-welcome h2 { color: var(--eco-primary-dark); letter-spacing: -.7px; }
+.member-app .dash-welcome p { font-size: 13px; line-height: 1.8; }
+.member-app .stat-card, .member-app .dash-panel, .admin-app .card, .admin-app .stat-card { border-width: 1px; box-shadow: 0 5px 18px rgba(27,67,50,.035); }
+.member-app .stat-icon.blue, .member-app .stat-icon.purple { background: var(--eco-secondary-soft); color: var(--eco-secondary); }
+.member-app .btn-msg, .member-app .profile-btn { background: var(--eco-primary); }
+.member-app .btn-home { background: #EAF2E5; }
+.member-app .page-title, .admin-app .page-title h1 { letter-spacing: -.8px; font-weight: 800; }
+.admin-app .nav-item.active { background: #EAF2E5; border-radius: 24px; }
+.admin-app .nav-item { border-radius: 24px; }
+.admin-app .btn-new-report { background: var(--eco-primary); color: white; border-color: var(--eco-primary); box-shadow: 0 3px 10px rgba(45,106,79,.12); }
+.admin-app .btn-new-report:hover { background: var(--eco-primary-dark); border-color: var(--eco-primary-dark); }
+.admin-app .btn-new-report:disabled { cursor: not-allowed; }
+.admin-app .btn-mini { border-radius: 9px; }
+.admin-app .brand-sub { color: var(--eco-muted); font-size: 11px; }
+.admin-app .stat-card { border-radius: 18px; }
+.admin-app .lower-grid { grid-template-columns: minmax(0,7fr) minmax(0,3fr); }
+.admin-app .lower-grid > .card { min-width: 0; }
+.member-app .modal-content, .admin-app .modal-box, .admin-app .moderation-dialog { border-radius: 20px; }
+.member-app .modal-header { background: var(--eco-primary-soft); }
+.member-app .view-profile-card { border-radius: 20px; }
+.workspace-links { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0 0; padding: 16px 0; font-size: 11px; color: var(--eco-muted); }
+.workspace-links a { color: var(--eco-muted); text-decoration: none; }
+.workspace-links a:hover { color: var(--eco-primary); text-decoration: underline; }
+.member-app .workspace-links { margin-top: 28px; border-top: 1px solid var(--eco-border); }
+.admin-app .workspace-links { margin-inline: 32px; border-top: 1px solid var(--eco-border); }
+@media (max-width: 1024px) {
+  .admin-app .lower-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 768px) {
+  .member-app { --header-h: 68px; }
+  .member-app .dash-welcome { padding: 22px; background: linear-gradient(115deg,#EDF3E6,#E1EAD5); }
+  .member-app .dash-welcome h2, .member-app .dash-welcome p { max-width: none; }
+  .admin-app .workspace-links { margin-inline: 20px; }
+  .member-app .btn-home, .member-app .btn-msg { padding: 8px 10px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+  .member-app #header { padding-inline: 16px; gap: 8px; }
+  .member-app .header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+  .member-app .header-actions { gap: 8px; flex-shrink: 0; }
+  .member-app .header-action-label { display: none; }
+  .member-app .btn-home, .member-app .btn-msg { width: 36px; height: 36px; justify-content: center; }
+}
