@@ -1,0 +1,43 @@
+/* Shared dimensions for Home and the public information pages. */
+.public-header { background:rgba(255,255,255,.97); border-bottom:1px solid #E4E9E0; min-height:80px; height:auto; }
+.public-header > .container { width:calc(100% - 64px); max-width:1200px; padding:0; margin-inline:auto; min-height:80px; height:auto; display:flex; align-items:center; flex-wrap:nowrap; justify-content:flex-start; gap:24px; }
+.public-header :is(.navbar-brand,.brand) { display:flex; align-items:center; flex-shrink:0; gap:9px; margin:0; padding:0; color:var(--eco-primary); font-size:25px; line-height:1.2; font-weight:800; letter-spacing:-.8px; text-decoration:none; white-space:nowrap; }
+.public-header .brand-icon { width:40px; height:40px; flex-shrink:0; display:grid; place-items:center; border-radius:12px; font-size:28px; line-height:1; font-weight:500; background:linear-gradient(135deg,#377E58,var(--eco-primary-dark)); box-shadow:0 3px 8px #1b433218; }
+.public-header :is(.desktop-nav-links,.nav-links) { display:flex; align-items:center; flex-shrink:0; gap:3px; margin:0; }
+.public-header :is(.desktop-nav-links,.nav-links) a { display:inline-flex; align-items:center; padding:12px 10px; font-size:12px; line-height:18px; font-weight:700; letter-spacing:normal; white-space:nowrap; color:#566159; text-decoration:none; }
+.public-header :is(.nav-right,.nav-actions) { display:flex; align-items:center; flex-shrink:0; gap:12px; margin-left:auto; }
+.public-header :is(#navLoggedOut,.guest-actions) { display:flex; align-items:center; gap:8px; }
+.public-header :is(.btn-login,.login-link,.btn-signup,.button-small) { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; box-sizing:border-box; height:42px; min-height:42px; padding:0 16px; border:1px solid transparent; border-radius:12px; font-family:'Plus Jakarta Sans',Arial,sans-serif; font-size:13px; line-height:20px; font-weight:600; letter-spacing:normal; text-decoration:none; white-space:nowrap; transform:none; }
+.public-header :is(.btn-login,.login-link) { color:#333; background:transparent; box-shadow:none; }
+.public-header :is(.btn-signup,.button-small) { color:white; background:var(--eco-primary); box-shadow:0 2px 10px rgba(45,106,79,.15); }
+.public-header :is(.btn-login,.login-link):hover { background:var(--eco-background); color:var(--eco-primary); }
+.public-header :is(.btn-signup,.button-small):hover { background:var(--eco-primary-dark); opacity:1; transform:none; }
+.public-header .search-wrap { flex:1 1 240px; min-width:120px; max-width:400px; margin:0 0 0 auto; }
+.public-header .menu-toggle { display:none; flex-shrink:0; width:36px; height:36px; padding:8px; border:1px solid var(--eco-border); border-radius:9px; background:white; cursor:pointer; }
+.public-header .menu-toggle span { display:block; height:2px; margin:5px 0; background:var(--eco-primary); }
+@media(max-width:1050px) { .public-header > .container { gap:12px; } }
+@media(max-width:850px) {
+  .public-header, .public-header > .container { min-height:72px; }
+  .public-header > .container { width:calc(100% - 32px); }
+  .public-header :is(.navbar-brand,.brand) { font-size:22px; gap:8px; }
+  .public-header .brand-icon { width:34px; height:34px; }
+  .public-header :is(.nav-right,.nav-actions) { gap:8px; }
+  .public-header :is(.btn-login,.login-link,.btn-signup,.button-small) { padding-inline:12px; height:40px; min-height:40px; }
+  .public-header .search-wrap { display:none!important; }
+  .public-header .mobile-search-btn { display:none; }
+  .public-header .mobile-search-bar { display:flex!important; position:static; width:100%; padding:0 16px 12px; gap:8px; border:0; box-sizing:border-box; }
+  .public-header .mobile-search-bar input { min-width:0; }
+  .public-header .menu-toggle { display:block; }
+  .public-header :is(.desktop-nav-links,.nav-links) { display:none; position:absolute; top:100%; left:0; right:0; margin:0; padding:14px 16px; flex-direction:column; align-items:stretch; gap:4px; background:white; border-bottom:1px solid var(--eco-border); box-shadow:0 12px 20px #18321c0a; }
+  .public-header :is(.desktop-nav-links,.nav-links).is-open { display:flex; }
+  .public-header :is(.desktop-nav-links,.nav-links) a { padding:12px 10px; }
+  .public-header .menu-toggle[aria-expanded=true] span:first-child { transform:translateY(3.5px) rotate(45deg); }
+  .public-header .menu-toggle[aria-expanded=true] span:last-child { transform:translateY(-3.5px) rotate(-45deg); }
+}
+@media(max-width:380px) {
+  .public-header > .container { gap:6px; }
+  .public-header :is(.nav-right,.nav-actions) { gap:4px; }
+  .public-header :is(#navLoggedOut,.guest-actions) { gap:4px; }
+  .public-header :is(.btn-login,.login-link,.btn-signup,.button-small) { padding-inline:8px; }
+  .public-header .btn-list-item { padding-inline:8px; }
+}

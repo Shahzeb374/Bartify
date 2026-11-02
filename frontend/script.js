@@ -764,3 +764,26 @@ window.addEventListener('focus', refreshHomeUnread);
 window.addEventListener('storage', event => { if (['barterToken', 'barterUser', 'bartifyUser', null].includes(event.key)) { checkLoginState(); startHomeMessageNotifications(); } });
 window.addEventListener('pagehide', stopHomeMessageNotifications);
 window.addEventListener('pageshow', event => { if (event.persisted) startHomeMessageNotifications(); });
+
+// Public navigation uses the same mobile menu as About Us and How It Works.
+(() => {
+  const menu = document.getElementById('primaryNavigation');
+  const toggle = document.getElementById('menuToggle');
+  const setMenu = open => {
+    menu.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+  };
+  toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+  document.addEventListener('click', event => {
+    if (!menu.contains(event.target) && !toggle.contains(event.target)) setMenu(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+      setMenu(false);
+      toggle.focus();
+    }
+  });
+  menu.addEventListener('click', event => { if (event.target.closest('a')) setMenu(false); });
+  window.matchMedia('(min-width: 851px)').addEventListener('change', event => { if (event.matches) setMenu(false); });
+})();

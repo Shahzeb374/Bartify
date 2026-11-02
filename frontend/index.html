@@ -11,19 +11,20 @@
   <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="style.css"/>
 
+<link rel="stylesheet" href="public-navigation.css">
 </head>
 <body>
 
 <!-- ═══ NAVBAR ═══ -->
 <a class="skip-link" href="#listings">Skip to listings</a>
-<nav class="navbar" aria-label="Main navigation">
+<nav class="navbar public-header" aria-label="Main navigation">
   <div class="container">
     <a class="navbar-brand" href="index.html">
       <div class="brand-icon">⇄</div>
       <span class="brand-name">Bartify</span>
     </a>
 
-    <div class="desktop-nav-links" aria-label="Primary pages">
+    <div class="desktop-nav-links" id="primaryNavigation" aria-label="Primary pages">
       <a href="#categories">Categories</a>
       <a href="how-it-works.html">How It Works</a>
       <a href="about-us.html">About Us</a>
@@ -70,6 +71,7 @@
           </div>
         </div>
       </div>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primaryNavigation"><span></span><span></span></button>
     </div>
   </div>
 
