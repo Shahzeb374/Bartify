@@ -1,0 +1,36 @@
+/* Wordmark green sampled from the supplied Bartify logo. */
+:root { --bartify-logo-green: #05492D; }
+body .bartify-wordmark.bartify-wordmark {
+  display:inline; width:auto; height:auto; padding:0; margin:0;
+  border:0; border-radius:0; background:none; box-shadow:none;
+  color:var(--bartify-logo-green); font:inherit; letter-spacing:inherit;
+}
+body .bartify-logo-slot.bartify-logo-slot,
+.public-header .bartify-logo-slot {
+  display:inline-flex; align-items:center; justify-content:center;
+  flex:0 0 auto; width:40px; height:40px; padding:0; margin:0;
+  background:transparent; border:0; border-radius:0; box-shadow:none;
+}
+body img.bartify-logo {
+  display:block; width:100%; height:100%; max-width:100%;
+  object-fit:contain; border:0; border-radius:0; box-shadow:none;
+}
+body :is(.footer-brand,.theme-footer-brand) {
+  display:inline-flex; align-items:center; gap:10px; width:fit-content;
+  padding:8px 13px; background:#F8FAF5; border-radius:14px;
+  color:var(--bartify-logo-green); font-size:20px; line-height:1.2;
+  font-weight:800; text-decoration:none;
+}
+body :is(.footer-brand,.theme-footer-brand):hover {
+  color:var(--bartify-logo-green); background:white; text-decoration:none;
+}
+body .workspace-links { align-items:center; }
+body .workspace-brand {
+  display:inline-flex; align-items:center; gap:8px; margin-right:auto;
+  color:var(--bartify-logo-green); font-size:18px; font-weight:800;
+  text-decoration:none; line-height:1.2;
+}
+body .workspace-brand .bartify-logo-slot { width:32px; height:32px; }
+@media(max-width:850px) {
+  body .public-header .bartify-logo-slot { width:34px; height:34px; }
+}
