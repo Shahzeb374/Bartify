@@ -472,3 +472,22 @@ body { background: #F7F9F4; }
 @media(max-width:1100px){.desktop-nav-links a{padding-inline:7px;font-size:11px}.search-wrap{max-width:320px}}
 @media(max-width:850px){.desktop-nav-links{display:none}.search-wrap{max-width:460px;margin-inline:auto}}
 @media(max-width:760px){.professional-footer .footer-bottom{align-items:center}}
+
+/* A bottom category dock for all homepage browsing and search. */
+body.has-floating-categories { padding-bottom:calc(var(--floating-category-height, 70px) + 32px + env(safe-area-inset-bottom, 0px)); }
+.has-floating-categories #categories {
+  position:fixed; top:auto; bottom:calc(16px + env(safe-area-inset-bottom, 0px) + var(--category-keyboard-offset, 0px));
+  left:50%; width:max-content; max-width:calc(100% - 32px); margin:0; padding:10px;
+  border:1px solid var(--eco-border-strong); border-radius:22px;
+  background:rgba(255,255,255,.97); box-shadow:0 8px 32px rgba(27,67,50,.2);
+  transform:translateX(-50%); transition:transform .18s ease,opacity .18s ease;
+}
+.has-floating-categories #categories > .container { width:100%; max-width:100%; padding:0; margin:0; }
+.has-floating-categories #categories .cat-filters { margin:0; padding:2px; gap:8px; scrollbar-width:none; overscroll-behavior-x:contain; }
+.has-floating-categories #categories .cat-filters::-webkit-scrollbar { display:none; }
+.has-floating-categories #categories .cat-btn { flex-shrink:0; min-height:42px; padding:10px 18px; }
+.has-floating-categories #categories:is(.is-scrolling,.is-outside-listings) { opacity:0; pointer-events:none; transform:translate(-50%,calc(100% + 40px)); }
+@media(max-width:600px) {
+  .has-floating-categories #categories { width:calc(100% - 24px); max-width:calc(100% - 24px); padding:8px; bottom:calc(12px + env(safe-area-inset-bottom, 0px) + var(--category-keyboard-offset, 0px)); border-radius:20px; }
+}
+@media(prefers-reduced-motion:reduce) { .has-floating-categories #categories { transition:none; } }

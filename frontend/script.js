@@ -11,6 +11,34 @@ let reportSubmitting = false;
 let listingsRequest = 0;
 let listingsController = null;
 let searchTimer = null;
+let categoryScrollTimer = null;
+
+function syncCategoryDock() {
+  document.body.classList.add('has-floating-categories');
+  const bar = document.getElementById('categories');
+  document.documentElement.style.setProperty('--home-category-height', '0px');
+  document.documentElement.style.setProperty('--floating-category-height', `${bar.offsetHeight}px`);
+  updateCategoryVisibility();
+}
+
+function updateCategoryVisibility() {
+  const bar = document.getElementById('categories');
+  const listings = document.getElementById('listings').getBoundingClientRect();
+  const navbarBottom = document.querySelector('.navbar').getBoundingClientRect().bottom;
+  // Hide when the footer takes over the reading area, including on tall screens.
+  // Short result sets keep their filters while their own midpoint is in view.
+  const readingBoundary = navbarBottom + Math.min(listings.height, window.innerHeight - navbarBottom) / 2;
+  const inListings = listings.top <= navbarBottom + 24 && listings.bottom > readingBoundary;
+  bar.classList.toggle('is-outside-listings', !inListings);
+  bar.inert = !inListings || bar.classList.contains('is-scrolling');
+}
+
+function showCategoryDock() {
+  clearTimeout(categoryScrollTimer);
+  const bar = document.getElementById('categories');
+  bar.classList.remove('is-scrolling');
+  updateCategoryVisibility();
+}
 
 function setListingsStatus(message) {
   const status = document.getElementById('listingsStatus');
@@ -19,6 +47,7 @@ function setListingsStatus(message) {
 
 function scheduleSearch(value) {
   currentQuery = value.trim();
+  syncCategoryDock();
   for (const id of ['searchInput', 'mobileSearchInput']) {
     const input = document.getElementById(id);
     if (input && input.value !== value) input.value = value;
@@ -513,6 +542,7 @@ function checkLoginState() {
   const inn  = document.getElementById('navLoggedIn');
   const signedIn = Boolean(user);
   document.body.classList.toggle('is-signed-in', signedIn);
+  syncCategoryDock();
   const hero = document.getElementById('homeHero');
   const community = document.getElementById('communityCta');
   if (hero) hero.hidden = signedIn;
@@ -633,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const categories = document.querySelector('.categories');
   const measureStickyRows = () => {
     if (navbar) document.documentElement.style.setProperty('--home-nav-height', `${navbar.getBoundingClientRect().height}px`);
-    if (categories) document.documentElement.style.setProperty('--home-category-height', `${categories.getBoundingClientRect().height}px`);
+    if (categories) syncCategoryDock();
   };
   measureStickyRows();
   if (window.ResizeObserver) {
@@ -786,4 +816,48 @@ window.addEventListener('pageshow', event => { if (event.persisted) startHomeMes
   });
   menu.addEventListener('click', event => { if (event.target.closest('a')) setMenu(false); });
   window.matchMedia('(min-width: 851px)').addEventListener('change', event => { if (event.matches) setMenu(false); });
+})();
+
+// Keep category filters within reach, and clear the view while the page scrolls.
+(() => {
+  const bar = document.getElementById('categories');
+  window.addEventListener('scroll', () => {
+    if (!document.body.classList.contains('has-floating-categories')) return;
+    updateCategoryVisibility();
+    if (bar.contains(document.activeElement) && document.activeElement.matches(':focus-visible')) return;
+    bar.classList.add('is-scrolling');
+    bar.inert = true;
+    clearTimeout(categoryScrollTimer);
+    categoryScrollTimer = setTimeout(showCategoryDock, 220);
+  }, {passive:true});
+  for (const id of ['searchInput', 'mobileSearchInput']) {
+    const input = document.getElementById(id);
+    input.addEventListener('focus', () => { syncCategoryDock(); showCategoryDock(); });
+    input.addEventListener('blur', () => requestAnimationFrame(syncCategoryDock));
+  }
+  // Keep filters above the on-screen keyboard when searching on a phone.
+  const positionAboveKeyboard = () => {
+    const viewport = window.visualViewport;
+    const gap = viewport ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
+    document.documentElement.style.setProperty('--category-keyboard-offset', `${gap}px`);
+    updateCategoryVisibility();
+  };
+  window.visualViewport?.addEventListener('resize', positionAboveKeyboard);
+  window.visualViewport?.addEventListener('scroll', positionAboveKeyboard);
+  window.addEventListener('resize', positionAboveKeyboard);
+  window.addEventListener('pageshow', () => { syncCategoryDock(); showCategoryDock(); positionAboveKeyboard(); });
+  document.querySelectorAll('a[href="#categories"], a[href="index.html#categories"]').forEach(link => {
+    link.addEventListener('click', event => {
+      if (!document.body.classList.contains('has-floating-categories')) return;
+      event.preventDefault();
+      document.getElementById('listings').scrollIntoView({behavior:'smooth', block:'start'});
+      showCategoryDock();
+    });
+  });
+  if (window.IntersectionObserver) {
+    new IntersectionObserver(updateCategoryVisibility).observe(document.getElementById('listings'));
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(updateCategoryVisibility).observe(document.getElementById('listings'));
+  }
 })();
