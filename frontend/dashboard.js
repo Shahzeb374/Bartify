@@ -327,7 +327,7 @@ function renderDashHome() {
       const status   = normStatus(p);
       const badgeCls = status === 'active' ? 'rb-active' : 'rb-pending';
       return `
-        <div class="recent-row" onclick="navigate('${status === 'pending' || status === 'rejected' ? 'pendingListings' : 'activeListings'}')">
+        <div class="recent-row" onclick="navigate('${status !== 'active' ? 'pendingListings' : 'activeListings'}')">
           ${imgEl}
           <div class="recent-info">
             <div class="recent-title">${esc(p.title)}</div>
@@ -348,7 +348,7 @@ function renderDashHome() {
 // ════════════════════════════════════════════════════
 function renderEditList() {
   const c = document.getElementById('editListingList');
-  const editable = myPosts.filter(p => normStatus(p) !== 'pending');
+  const editable = myPosts.filter(p => !['pending', 'suspended'].includes(normStatus(p)));
   if (!editable.length) {
     c.innerHTML = emptyState('fa-solid fa-pen-to-square','No listings to edit','Approved listings will appear here for editing.',
       `<a href="#" onclick="navigate('addListing');return false;" class="btn-primary-sm" style="margin:0 auto;"><i class="fa-solid fa-plus"></i> Add Listing</a>`);
@@ -566,7 +566,7 @@ function renderActiveListings() {
 // ════════════════════════════════════════════════════
 function renderPendingListings() {
   const pending = myPosts.filter(p => normStatus(p) !== 'active');
-  document.getElementById('pendingCount').textContent = `${pending.length} Under Review / Rejected`;
+  document.getElementById('pendingCount').textContent = `${pending.length} Under Review / Rejected / Suspended`;
   const c = document.getElementById('pendingListingsList');
   if (!pending.length) {
     c.innerHTML = emptyState('fa-regular fa-clock','No pending listings','Newly added listings appear here until approved.');
@@ -588,7 +588,7 @@ function renderPendingListings() {
         </div>
       </div>
       <div class="listing-actions">
-        <span class="listing-status status-pending">${normStatus(p) === 'rejected' ? 'Rejected' : 'Pending'}</span>
+        <span class="listing-status status-pending">${normStatus(p) === 'suspended' ? 'Suspended' : normStatus(p) === 'rejected' ? 'Rejected' : 'Pending'}</span>
         ${normStatus(p) === 'rejected' ? `<button class="btn-edit-sm" onclick="goEdit('${p.id}')">Edit &amp; resubmit</button>` : ''}
       </div>
     </div>`).join('');
@@ -1138,6 +1138,7 @@ function connectMessagesSocket() {
   chatSocket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
+      if (data.type === 'session_revoked') { BartifySession.revoke(); return; }
       if (data.type === 'new_message') handleIncomingMessage(data.conversation_id, data.message);
     } catch(e) { /* ignore malformed frame */ }
   };

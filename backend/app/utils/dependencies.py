@@ -35,6 +35,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="User not found")
     if user.status != 1:
         raise HTTPException(status_code=403, detail="Account is inactive")
+    if payload.get("session_version", 0) != user.session_version:
+        raise HTTPException(status_code=401, detail="Session revoked")
     
     return user
 
@@ -52,7 +54,8 @@ def get_user_from_token(token: str, db: Session):
     except JWTError:
         return None
 
-    return db.query(models.User).filter(models.User.u_id == user_id, models.User.status == 1).first()
+    user = db.query(models.User).filter(models.User.u_id == user_id, models.User.status == 1).first()
+    return user if user and payload.get("session_version", 0) == user.session_version else None
 
 
 def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)):

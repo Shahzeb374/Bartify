@@ -113,13 +113,55 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const unavailable = selected.status !== 'pending' || !['clean', 'issue'].includes(selected.model_label);
     $('approvePost').disabled = $('rejectPost').disabled = unavailable;
+    updatePostActions();
     $('reviewStatus').textContent = selected.status !== 'pending' ? `This post is ${selected.status}.` : unavailable ? 'Close this review and use New Report to retry the model check.' : '';
     $('moderationDialog').showModal();
+  }
+
+  function updatePostActions() {
+    const status = selected?.moderation_status || selected?.status;
+    $('suspendPost').hidden = status === 'suspended';
+    $('restorePost').hidden = status !== 'suspended';
+    $('suspendPost').disabled = $('deletePost').disabled = !selected || deciding;
+    $('restorePost').disabled = !selected || deciding || selected.owner_active === false;
+  }
+
+  async function managePost(action) {
+    if (!selected || deciding) return;
+    if (action === 'delete' && !window.confirm(`Permanently delete “${selected.title}”? Its images and related offers will also be removed.`)) return;
+    deciding = true;
+    updatePostActions();
+    $('approvePost').disabled = $('rejectPost').disabled = $('closeReview').disabled = true;
+    $('reviewStatus').textContent = 'Saving…';
+    try {
+      const result = await request(`/admin/posts/${selected.id}${action === 'delete' ? '' : '/status'}`, {
+        method: action === 'delete' ? 'DELETE' : 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({revision:selected.revision, expected_status:selected.moderation_status || selected.status,
+          ...(action === 'delete' ? {} : {action})}),
+      });
+      $('moderationDialog').close(); selected = null;
+      window.adminNotice(result.message);
+      renderOverview(await request('/admin/overview'));
+      await loadQueue();
+      await window.reloadAdminSection?.();
+    } catch (error) {
+      $('reviewStatus').textContent = error.message;
+      if ([404,409].includes(error.status)) {
+        $('moderationDialog').close(); selected = null;
+        window.adminNotice(error.message);
+        await window.reloadAdminSection?.();
+      }
+    } finally {
+      deciding = false; $('closeReview').disabled = false;
+      $('approvePost').disabled = $('rejectPost').disabled = !selected || selected.status !== 'pending' || !['clean','issue'].includes(selected.model_label);
+      updatePostActions();
+    }
   }
 
   async function decide(decision) {
     if (!selected || selected.status !== 'pending' || deciding) return;
     deciding = true;
+    updatePostActions();
     $('approvePost').disabled = $('rejectPost').disabled = $('closeReview').disabled = true;
     $('reviewStatus').textContent = 'Saving decision…';
     try {
@@ -143,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } finally {
       deciding = false;
+      updatePostActions();
       $('closeReview').disabled = false;
       $('approvePost').disabled = $('rejectPost').disabled = !selected || selected.status !== 'pending' || !['clean', 'issue'].includes(selected.model_label);
     }
@@ -154,6 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('approvePost').addEventListener('click', () => decide('approve'));
   $('rejectPost').addEventListener('click', () => decide('reject'));
+  $('suspendPost').addEventListener('click', () => managePost('suspend'));
+  $('restorePost').addEventListener('click', () => managePost('restore'));
+  $('deletePost').addEventListener('click', () => managePost('delete'));
   $('closeReview').addEventListener('click', () => $('moderationDialog').close());
   $('moderationDialog').addEventListener('cancel', event => { if (deciding) event.preventDefault(); });
   $('refreshOverviewBtn').addEventListener('click', refresh);

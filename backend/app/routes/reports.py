@@ -25,7 +25,7 @@ def submit_report(data: NewReport, db: Session = Depends(get_db),
     post = None
     if data.target_type == "post":
         post = db.get(models.Post, data.target_id)
-        if not post or post.status != 1:
+        if not post or post.status != 1 or not post.user or post.user.status != 1:
             raise HTTPException(404, "This post is no longer available")
         target = db.get(models.User, post.user_id)
     else:

@@ -768,7 +768,11 @@ function connectHomeMessageSocket() {
   homeMessageSocket = socket;
   socket.onopen = refreshHomeUnread;
   socket.onmessage = event => {
-    try { if (JSON.parse(event.data).type === 'new_message') refreshHomeUnread(); } catch (_) {}
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'session_revoked') BartifySession.revoke();
+      else if (data.type === 'new_message') refreshHomeUnread();
+    } catch (_) {}
   };
   socket.onclose = () => {
     if (homeMessageSocket !== socket) return;

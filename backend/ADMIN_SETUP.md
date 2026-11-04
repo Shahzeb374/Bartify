@@ -66,6 +66,25 @@ All sidebar sections now use administrator-only database routes:
 
 All admin UI behavior is in `frontend/adminDashboard.js`.
 
+## Suspension and post removal
+
+- Restart the backend after updating. Startup adds `users.session_version` with
+  default `0` to existing databases. Existing active sessions remain valid until revoked.
+- Suspending a member increments their session version, blocks authenticated requests
+  and login, and hides all their posts from public search and detail endpoints.
+  Open message sockets receive a logout event. Pages also check the session every
+  15 seconds and on focus, covering disconnected sockets and other server workers.
+- Reactivation requires a fresh login. Previously approved posts become visible again;
+  pending/rejected posts keep their review state. No bulk approval occurs.
+- Listings → View lets an admin suspend or permanently delete any post, including
+  approved posts. Post suspension uses status `3`, independently of account status.
+  Its owner cannot edit it to bypass suspension. Returning it to review sets status
+  `0` and requires approval again. The owner must be active first.
+- Delete asks for confirmation and removes the post, its images, and related offers
+  and offer images. Moderation history and report snapshots are retained.
+- Status changes and deletion check the viewed revision and prior status, rejecting
+  stale actions with `409`. The Suspended filter includes account and post suspensions.
+
 Home page post details fetch the owner's name, email, profile image, and accepted/rejected/pending offer counts.
 Counts include offers sent and received. Actual physical exchange completion is not tracked.
 Signed-in users can report another user's post or profile using `POST /reports/`.

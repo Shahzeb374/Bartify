@@ -26,10 +26,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from jose import jwt
 from app import models
-from app.bootstrap import ensure_default_roles
+from app.bootstrap import ensure_default_roles, ensure_session_version
 from app.auth import create_access_token
 from app.moderation import classify_text
-from app.routes import admin, users, posts, offers, reports
+from app.routes import admin, users, posts, offers, reports, messages
 from app.utils.dependencies import get_db
 from app.utils.security import hash_password
 
@@ -45,7 +45,9 @@ class AdminWorkflowTests(unittest.TestCase):
         cls.password_hash = hash_password("Testing123!")
 
     def setUp(self):
-        self.engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        database_url = getattr(self, 'database_url', 'sqlite://')
+        self.engine = create_engine(database_url, connect_args={"check_same_thread": False},
+                                    **({'poolclass': StaticPool} if database_url == 'sqlite://' else {}))
         event.listen(self.engine, "connect", lambda connection, _: connection.execute("PRAGMA foreign_keys=ON"))
         models.Base.metadata.create_all(self.engine)
         self.sessions = sessionmaker(bind=self.engine)
@@ -72,7 +74,9 @@ class AdminWorkflowTests(unittest.TestCase):
         self.engine.dispose()
 
     def headers(self, user_id=1):
-        return {"Authorization": "Bearer " + create_access_token({"user_id": user_id})}
+        with self.sessions() as db:
+            version = db.get(models.User, user_id).session_version
+        return {"Authorization": "Bearer " + create_access_token({"user_id": user_id, "session_version": version})}
 
     def submit(self, title="Laptop for trade"):
         response = self.client.post("/posts/", headers=self.headers(2), data={
@@ -336,6 +340,100 @@ class AdminWorkflowTests(unittest.TestCase):
         self.assertEqual(self.client.patch('/admin/users/999/status', headers=self.headers(), json={'status': 'active'}).status_code, 404)
         self.client.patch('/admin/users/3/status', headers=self.headers(), json={'status': 'active'})
         self.assertEqual(self.client.get('/users/me', headers=self.headers(3)).status_code, 200)
+
+    def test_suspension_hides_posts_revokes_sessions_and_preserves_review_state(self):
+        approved = self.submit('Approved laptop')
+        self.assertEqual(self.decide(self.queued()[0]).status_code, 200)
+        pending = self.submit('Pending laptop')
+        rejected = self.submit('Rejected laptop')
+        self.assertEqual(self.decide(next(p for p in self.queued() if p['id'] == rejected), 'reject').status_code, 200)
+        old_headers = self.headers(2)
+        self.assertEqual(self.client.get('/posts/').json()['total'], 1)
+        self.client.patch('/admin/users/2/status', headers=self.headers(), json={'status':'suspended'})
+        self.assertEqual(self.client.get('/posts/').json()['total'], 0)
+        self.assertEqual(self.client.get(f'/posts/{approved}').status_code, 404)
+        self.assertEqual(self.client.get('/users/me', headers=old_headers).status_code, 403)
+        self.assertEqual(self.client.post('/users/login', json={'email':'seller@example.com','password':'Testing123!'}).status_code, 403)
+        self.assertEqual(self.client.post('/offers/', headers=self.headers(3), data={'post_id':approved, 'title':'Offer', 'category':'Books'}).status_code, 404)
+        self.assertEqual(self.client.get('/admin/listings?status=suspended', headers=self.headers()).json()['total'], 3)
+        self.assertEqual(self.client.get('/admin/listings?status=active', headers=self.headers()).json()['total'], 0)
+        self.assertEqual(self.decide(next(p for p in self.queued() if p['id'] == pending)).status_code, 409)
+        self.client.patch('/admin/users/2/status', headers=self.headers(), json={'status':'active'})
+        self.assertEqual(self.client.get('/users/me', headers=old_headers).status_code, 401)
+        login = self.client.post('/users/login', json={'email':'seller@example.com','password':'Testing123!'})
+        self.assertEqual(self.client.get('/users/me', headers={'Authorization':'Bearer '+login.json()['access_token']}).status_code, 200)
+        self.assertEqual(self.client.get('/posts/').json()['total'], 1)
+        with self.sessions() as db:
+            self.assertEqual([db.get(models.Post, i).status for i in [approved,pending,rejected]], [1,0,2])
+
+    def test_post_suspension_cannot_be_bypassed_and_requires_new_review(self):
+        post_id = self.submit()
+        self.decide(self.queued()[0])
+        post = self.client.get(f'/admin/posts/{post_id}', headers=self.headers()).json()
+        body = {'revision':post['revision'], 'expected_status':'active', 'action':'suspend'}
+        route = f'/admin/posts/{post_id}/status'
+        self.assertEqual(self.client.patch(route, headers=self.headers(2), json=body).status_code, 403)
+        self.assertEqual(self.client.patch(route, json=body).status_code, 401)
+        self.assertEqual(self.client.patch(route, headers=self.headers(), json=body).status_code, 200)
+        self.assertEqual(self.client.get('/posts/').json()['total'], 0)
+        self.assertEqual(self.client.get(f'/posts/{post_id}').status_code, 404)
+        self.assertEqual(self.client.put(f'/posts/{post_id}', headers=self.headers(2), data={'title':'Bypass'}).status_code, 409)
+        self.assertEqual(self.client.patch(route, headers=self.headers(), json=body).status_code, 409)
+        self.client.patch('/admin/users/2/status', headers=self.headers(), json={'status':'suspended'})
+        body.update(expected_status='suspended', action='restore')
+        self.assertEqual(self.client.patch(route, headers=self.headers(), json=body).status_code, 409)
+        self.client.patch('/admin/users/2/status', headers=self.headers(), json={'status':'active'})
+        self.assertEqual(self.client.get('/posts/').json()['total'], 0)
+        self.assertEqual(self.client.patch(route, headers=self.headers(), json=body).status_code, 200)
+        self.assertEqual(self.client.get('/posts/').json()['total'], 0)
+        self.assertEqual(self.decide(self.queued()[0]).status_code, 200)
+        self.assertEqual(self.client.get('/posts/').json()['total'], 1)
+
+    def test_admin_delete_cleans_dependencies_and_keeps_audit_history(self):
+        post_id = self.submit()
+        self.decide(self.queued()[0])
+        result = self.client.post('/offers/', headers=self.headers(3), data={'post_id':post_id, 'title':'Offer', 'category':'Books'},
+                                  files=[('images',('offer.png', IMAGE_BYTES,'image/png'))])
+        self.assertEqual(result.status_code, 200, result.text)
+        self.client.post('/reports/', headers=self.headers(3), json={'target_type':'post', 'target_id':post_id, 'reason':'spam', 'details':'This listing needs a review.'})
+        post = self.client.get(f'/admin/posts/{post_id}', headers=self.headers()).json()
+        body = {'revision':post['revision'], 'expected_status':'active'}
+        route = f'/admin/posts/{post_id}'
+        self.assertEqual(self.client.request('DELETE', route, headers=self.headers(2), json=body).status_code, 403)
+        self.assertEqual(self.client.request('DELETE', route, headers=self.headers(), json={**body,'revision':'a'*64}).status_code, 409)
+        with self.sessions() as db:
+            files = [Path(i.image_url.lstrip('/')) for i in db.query(models.ProductImage).all()] + [Path(i.image_url.lstrip('/')) for i in db.query(models.OfferImage).all()]
+        self.assertTrue(all(f.exists() for f in files))
+        self.assertEqual(self.client.request('DELETE', route, headers=self.headers(), json=body).status_code, 200)
+        with self.sessions() as db:
+            for model in [models.Post,models.ProductImage,models.Offer,models.OfferImage,models.PostModeration]:
+                self.assertEqual(db.query(model).count(), 0)
+            audit = db.query(models.ModerationDecision).filter_by(decision='deleted').one()
+            self.assertIsNone(audit.post_id)
+            self.assertEqual(audit.post_title, 'Laptop for trade')
+            self.assertIsNone(db.query(models.UserReport).one().post_id)
+        self.assertFalse(any(f.exists() for f in files))
+        self.assertEqual(self.client.request('DELETE', route, headers=self.headers(), json=body).status_code, 404)
+
+    def test_suspension_notifies_open_websocket(self):
+        self.client.app.include_router(messages.router, prefix='/messages')
+        token = self.headers(2)['Authorization'].split(' ',1)[1]
+        with self.client.websocket_connect('/messages/ws?token='+token) as socket:
+            self.assertEqual(self.client.patch('/admin/users/2/status', headers=self.headers(), json={'status':'suspended'}).status_code, 200)
+            self.assertEqual(socket.receive_json()['type'], 'session_revoked')
+        self.assertNotIn(2, messages.manager.active)
+
+    def test_session_column_upgrade_is_idempotent(self):
+        from sqlalchemy import text
+        engine = create_engine('sqlite://')
+        with engine.begin() as connection:
+            connection.execute(text('CREATE TABLE users (u_id INTEGER PRIMARY KEY)'))
+            connection.execute(text('INSERT INTO users (u_id) VALUES (1)'))
+        ensure_session_version(engine)
+        ensure_session_version(engine)
+        with engine.connect() as connection:
+            self.assertEqual(connection.execute(text('SELECT session_version FROM users')).scalar(), 0)
+        engine.dispose()
 
     def test_sidebar_listings_reports_and_analytics(self):
         post_id = self.submit()

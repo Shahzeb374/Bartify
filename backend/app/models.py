@@ -30,6 +30,7 @@ class User(Base):
 
     role_id = Column(Integer, ForeignKey("roles.r_id"), default=1)
     status = Column(Integer, default=1)
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
 
     role = relationship("Role", back_populates="users")
     posts = relationship("Post", back_populates="user", cascade="all, delete")

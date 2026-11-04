@@ -147,6 +147,75 @@ const base = 'http://127.0.0.1:8011';
     assert.ok(dialog.width <= 390 && dialog.x >= 0);
     await page.locator('#closeReview').click();
 
+    // Account suspension signs out an open dashboard and a separate public-page session.
+    await page.setViewportSize({width:1280,height:720});
+    const sellerLogin = await page.request.post(base + '/users/login', {data:{email:'seller@example.com',password:'Testing123!'}});
+    const sellerSession = await sellerLogin.json();
+    const memberContexts = [];
+    const memberPages = [];
+    for (const target of ['dashboard.html', 'about-us.html']) {
+      const memberContext = await browser.newContext(); memberContexts.push(memberContext);
+      await memberContext.route('**/config.js', route => route.fulfill({contentType:'application/javascript',body:`const API_BASE_URL = '${base}';`}));
+      const memberPage = await memberContext.newPage(); memberPages.push(memberPage);
+      memberPage.on('pageerror', error => errors.push(error.message));
+      await memberPage.goto(base + '/login.html');
+      await memberPage.evaluate(session => {
+        localStorage.setItem('barterToken', session.access_token);
+        localStorage.setItem('barterUser', JSON.stringify(session.user));
+      }, sellerSession);
+      await memberPage.goto(base + '/' + target);
+    }
+    await memberPages[0].waitForFunction(() => typeof chatSocket !== 'undefined' && chatSocket?.readyState === 1);
+    await page.locator('[data-nav="users"]').click();
+    await page.locator('#searchInput').fill('Seller');
+    await page.waitForFunction(() => document.querySelector('#usersPage').textContent.startsWith('1 records'));
+    await page.locator('#usersRows button').click();
+    await page.getByRole('button', {name:'Suspend user',exact:true}).click();
+    await page.waitForFunction(() => document.querySelector('#adminDetailStatus').textContent === 'User suspended');
+    for (const memberPage of memberPages) {
+      await memberPage.waitForURL('**/login.html?reason=session-ended', {timeout:25000});
+      assert.equal(await memberPage.evaluate(() => localStorage.getItem('barterToken')), null);
+    }
+    assert.equal((await (await page.request.get(base + '/posts/')).json()).total, 0);
+    await page.getByRole('button', {name:'Activate user',exact:true}).click();
+    await page.waitForFunction(() => document.querySelector('#adminDetailStatus').textContent === 'User active');
+    const oldSession = await page.request.get(base + '/users/me', {headers:{Authorization:'Bearer '+sellerSession.access_token}});
+    assert.equal(oldSession.status(), 401);
+    assert.equal((await (await page.request.get(base + '/posts/')).json()).total, 1);
+    await page.locator('#closeAdminDetail').click();
+    for (const memberContext of memberContexts) await memberContext.close();
+
+    // Approved posts can be suspended, returned to review, approved, and deleted.
+    await page.locator('[data-nav="listings"]').click();
+    await page.locator('#listingsFilter').selectOption('active');
+    await page.waitForFunction(() => document.querySelector('#listingsPage').textContent.startsWith('1 records'));
+    await page.locator('#listingsRows button').click();
+    await page.locator('#suspendPost').click();
+    await page.waitForFunction(() => !document.querySelector('#moderationDialog').open);
+    assert.equal((await (await page.request.get(base + '/posts/')).json()).total, 0);
+    await page.locator('#listingsFilter').selectOption('suspended');
+    await page.locator('#listingsRows button').waitFor();
+    await page.locator('#listingsRows button').click();
+    await page.locator('#restorePost').click();
+    await page.waitForFunction(() => !document.querySelector('#moderationDialog').open);
+    await page.locator('#listingsFilter').selectOption('pending');
+    await page.locator('#searchInput').fill('laptop 01');
+    await page.waitForFunction(() => document.querySelector('#listingsPage').textContent.startsWith('1 records'));
+    await page.locator('#listingsRows button').click();
+    await page.locator('#approvePost').click();
+    await page.waitForFunction(() => !document.querySelector('#moderationDialog').open);
+    await page.locator('#listingsFilter').selectOption('active');
+    await page.locator('#listingsRows button').waitFor();
+    await page.locator('#listingsRows button').click();
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.locator('#deletePost').click();
+    assert.equal(await page.locator('#moderationDialog').evaluate(el => el.open), true);
+    assert.equal((await (await page.request.get(base + '/posts/')).json()).total, 1);
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#deletePost').click();
+    await page.waitForFunction(() => !document.querySelector('#moderationDialog').open);
+    assert.equal((await (await page.request.get(base + '/posts/')).json()).total, 0);
+
     // Forged browser role cannot override the server's member role.
     const login = await page.request.post(`${base}/users/login`, {data:{email:'seller@example.com', password:'Testing123!'}});
     const member = await login.json();
@@ -160,7 +229,7 @@ const base = 'http://127.0.0.1:8011';
     await page.goto(`${base}/adminDashboard.html`);
     await page.waitForURL('**/login.html');
     assert.deepEqual(errors, []);
-    console.log('PASS: browser login/roles, queue pagination/search, approve/reject, refresh/activity, navigation, and mobile review.');
+    console.log('PASS: login/roles, queue review, navigation/mobile, automatic suspension logout, reactivation, approved-post suspension/restore/deletion.');
   } finally {
     await browser.close();
   }

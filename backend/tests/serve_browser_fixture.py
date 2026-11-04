@@ -12,6 +12,8 @@ from app.routes import messages
 if __name__ == "__main__":
     AdminWorkflowTests.setUpClass()
     fixture = AdminWorkflowTests()
+    # Separate connections allow simultaneous browser tabs and session heartbeats.
+    fixture.database_url = 'sqlite:///' + str(Path.cwd() / 'browser.sqlite')
     fixture.setUp()
     try:
         app = fixture.client.app

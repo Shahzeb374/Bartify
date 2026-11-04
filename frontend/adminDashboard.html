@@ -217,7 +217,7 @@
         <div class="page-title"><h1>Listings & Verification</h1><p>All platform listings with their current moderation status.</p></div>
         <section class="card">
           <div class="card-header admin-toolbar">
-            <label>Filter <select id="listingsFilter" class="admin-select"><option value="all">All listings</option><option value="pending">Pending</option><option value="active">Active</option><option value="rejected">Rejected</option><option value="issue">Model flagged</option></select></label>
+            <label>Filter <select id="listingsFilter" class="admin-select"><option value="all">All listings</option><option value="pending">Pending</option><option value="active">Active</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option><option value="issue">Model flagged</option></select></label>
             <button class="btn-outline" data-reload="listings" type="button">Refresh</button>
 
           </div>
@@ -314,7 +314,7 @@
       <h4>Preferred trade</h4><p id="reviewTrade" class="review-copy"></p>
       <p id="reviewValue"></p>
       <p id="reviewStatus" role="status" aria-live="polite"></p>
-      <div class="review-actions"><button type="button" class="btn-save" id="approvePost">Approve &amp; publish</button><button type="button" class="btn-outline reject-post" id="rejectPost">Reject post</button></div>
+      <div class="review-actions"><button type="button" class="btn-save" id="approvePost">Approve &amp; publish</button><button type="button" class="btn-outline reject-post" id="rejectPost">Reject post</button><button type="button" class="btn-outline" id="suspendPost">Suspend post</button><button type="button" class="btn-outline" id="restorePost" hidden>Return to review</button><button type="button" class="btn-outline reject-post" id="deletePost">Delete post</button></div>
     </div>
   </dialog>
   <script src="session.js"></script>

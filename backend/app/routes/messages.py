@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Form, WebSocket, WebSocke
 from sqlalchemy.orm import Session, joinedload
 from app import models
 from app.utils.dependencies import get_current_user, get_db, get_user_from_token
+import asyncio
 
 router = APIRouter()
 
@@ -28,6 +29,16 @@ class ConnectionManager:
                 await ws.send_json(data)
             except Exception:
                 pass
+
+    async def revoke_user(self, user_id: int):
+        for ws in list(self.active.get(user_id, [])):
+            try:
+                await ws.send_json({'type': 'session_revoked'})
+                await ws.close(code=4401)
+            except Exception:
+                pass
+            finally:
+                self.disconnect(user_id, ws)
 
 
 manager = ConnectionManager()
@@ -192,8 +203,20 @@ async def messages_websocket(websocket: WebSocket, token: str = Query(None), db:
         return
 
     await manager.connect(user.u_id, websocket)
+    user_id = user.u_id
     try:
         while True:
-            await websocket.receive_text()  # client se kuch expect nahi karte, bas connection zinda rakhna hai
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=15)
+            except asyncio.TimeoutError:
+                pass
+            # Refresh the transaction too: suspension may have happened in another worker.
+            db.rollback()
+            if not get_user_from_token(token, db):
+                await websocket.send_json({'type': 'session_revoked'})
+                await websocket.close(code=4401)
+                break
     except WebSocketDisconnect:
-        manager.disconnect(user.u_id, websocket)
+        pass
+    finally:
+        manager.disconnect(user_id, websocket)

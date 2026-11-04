@@ -8,7 +8,7 @@ from typing import List, Optional
 import os
 import shutil
 import uuid
-from app.post_status import PENDING, LABELS
+from app.post_status import PENDING, SUSPENDED, LABELS
 from app.moderation import moderate_post
 
 router = APIRouter()
@@ -113,7 +113,7 @@ def get_posts(
         joinedload(models.Post.user),
         joinedload(models.Post.category),
         joinedload(models.Post.images)
-    ).filter(models.Post.status == 1)
+    ).filter(models.Post.status == 1, models.Post.user.has(models.User.status == 1))
 
     # Logged in ho to apni khud ki posts homepage feed se hatao
     if current_user:
@@ -160,7 +160,8 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
         joinedload(models.Post.user),
         joinedload(models.Post.category),
         joinedload(models.Post.images)
-    ).filter(models.Post.p_id == post_id, models.Post.status == 1).first()
+    ).filter(models.Post.p_id == post_id, models.Post.status == 1,
+             models.Post.user.has(models.User.status == 1)).first()
 
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -200,6 +201,8 @@ async def update_post(
         raise HTTPException(status_code=404, detail="Post not found")
     if post.user_id != current_user.u_id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this post")
+    if post.status == SUSPENDED:
+        raise HTTPException(status_code=409, detail="This post is suspended. An administrator must return it to review before editing.")
 
     valid_images = await _require_post_images(images) if images else []
     if not valid_images and not any(image.status == 1 for image in post.images):

@@ -59,7 +59,7 @@ async def signup(
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token({"user_id": new_user.u_id})
+    token = create_access_token({"user_id": new_user.u_id, "session_version": new_user.session_version})
 
     return {
         "access_token": token,
@@ -83,7 +83,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     if db_user.status != 1:
         raise HTTPException(status_code=403, detail="Account is inactive")
     
-    token = create_access_token({"user_id": db_user.u_id})
+    token = create_access_token({"user_id": db_user.u_id, "session_version": db_user.session_version})
     return {
         "access_token": token,
         "token_type": "bearer",

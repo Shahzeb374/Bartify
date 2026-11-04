@@ -8,7 +8,10 @@ from typing import Literal
 
 from app import models
 from app.moderation import moderate_post, post_revision
-from app.post_status import PENDING, APPROVED, REJECTED
+from app.post_status import PENDING, APPROVED, REJECTED, SUSPENDED, LABELS
+from app.routes.messages import manager
+from pathlib import Path
+import shutil
 from app.utils.dependencies import get_current_admin, get_db
 from app.utils.security import hash_password, verify_password
 
@@ -67,7 +70,10 @@ def review_payload(post, db):
         "price_from": float(post.price_from), "price_to": float(post.price_to),
         "condition_score": post.condition_score,
         "created_at": post.created_at.isoformat() if post.created_at else None,
-        "revision": revision, "status": {PENDING: "pending", APPROVED: "active", REJECTED: "rejected"}.get(post.status, "unknown"),
+        "revision": revision,
+        "status": "suspended" if not post.user or post.user.status != 1 else LABELS.get(post.status, "unknown"),
+        "moderation_status": LABELS.get(post.status, "unknown"),
+        "owner_active": bool(post.user and post.user.status == 1),
         "model_label": review.label if current else "unavailable",
         "confidence": float(review.confidence) if current and review.confidence is not None else None,
     }
@@ -106,6 +112,8 @@ def decide_post(post_id: int, data: ReviewDecision, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Post no longer exists")
     if post.status != PENDING:
         raise HTTPException(status_code=409, detail="This post has already been reviewed. Refresh the queue.")
+    if data.decision == "approve" and (not post.user or post.user.status != 1):
+        raise HTTPException(409, "Activate the owner before approving this post")
     revision = post_revision(post, db)
     review = db.get(models.PostModeration, post_id)
     if revision != data.revision or not review or review.revision != revision:
@@ -161,28 +169,35 @@ class UserStatus(BaseModel):
 
 
 @router.patch('/users/{user_id}/status')
-def set_user_status(user_id: int, data: UserStatus, db: Session = Depends(get_db)):
+async def set_user_status(user_id: int, data: UserStatus, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.u_id == user_id).with_for_update().first()
     if not user:
         raise HTTPException(404, 'User no longer exists')
     if user.role_id == 2:
         raise HTTPException(409, 'Administrator accounts cannot be suspended here')
+    if data.status == 'suspended' and user.status == 1:
+        user.session_version += 1
     user.status = 1 if data.status == 'active' else 0
     db.commit()
+    if data.status == 'suspended':
+        await manager.revoke_user(user_id)
     return {'message': f'User {data.status}', 'user': user_payload(user, db)}
 
 
 @router.get('/listings')
 def list_listings(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
                   search: str = Query('', max_length=255),
-                  status: Literal['all', 'pending', 'active', 'rejected', 'issue'] = 'all',
+                  status: Literal['all', 'pending', 'active', 'rejected', 'issue', 'suspended'] = 'all',
                   db: Session = Depends(get_db)):
     query = db.query(models.Post)
-    if status == 'issue':
+    if status == 'suspended':
+        query = query.filter(or_(models.Post.status == SUSPENDED, models.Post.user.has(models.User.status != 1)))
+    elif status == 'issue':
         query = query.join(models.PostModeration).filter(
             models.Post.status == PENDING, models.PostModeration.label == 'issue')
     elif status != 'all':
         query = query.filter(models.Post.status == {'pending': PENDING, 'active': APPROVED, 'rejected': REJECTED}[status])
+        query = query.filter(models.Post.user.has(models.User.status == 1))
     if search.strip():
         pattern = f'%{search.strip()}%'
         query = query.filter(or_(models.Post.title.ilike(pattern), models.Post.description.ilike(pattern),
@@ -199,6 +214,74 @@ def get_listing(post_id: int, db: Session = Depends(get_db)):
     if not post:
         raise HTTPException(404, 'Post no longer exists')
     return review_payload(post, db)
+
+
+class ListingAction(BaseModel):
+    revision: str = Field(min_length=64, max_length=64, pattern=r"^[a-f0-9]+$")
+    expected_status: Literal['pending', 'active', 'rejected', 'suspended']
+
+
+def locked_listing(post_id, data, db):
+    post = db.query(models.Post).filter(models.Post.p_id == post_id).with_for_update().first()
+    if not post:
+        raise HTTPException(404, "Post no longer exists")
+    if post_revision(post, db) != data.revision or LABELS.get(post.status) != data.expected_status:
+        raise HTTPException(409, "This post changed. Refresh and review its latest details.")
+    return post
+
+
+def record_listing_action(post, action, db, admin):
+    review = db.get(models.PostModeration, post.p_id)
+    db.add(models.ModerationDecision(
+        post_id=post.p_id, post_title=post.title, admin_id=admin.u_id, admin_name=admin.name,
+        decision=action, model_label=review.label if review else 'unavailable', revision=post_revision(post, db)))
+
+
+class ListingStatusAction(ListingAction):
+    action: Literal['suspend', 'restore']
+
+
+@router.patch('/posts/{post_id}/status')
+def set_listing_status(post_id: int, data: ListingStatusAction, db: Session = Depends(get_db),
+                       admin: models.User = Depends(get_current_admin)):
+    post = locked_listing(post_id, data, db)
+    if data.action == 'restore':
+        if post.status != SUSPENDED or not post.user or post.user.status != 1:
+            raise HTTPException(409, 'Activate the owner before returning a suspended post to review')
+        post.status = PENDING
+        moderate_post(post, db)
+        decision, message = 'returned to review', 'Post returned to review; approval is required before publishing'
+    else:
+        if post.status == SUSPENDED:
+            raise HTTPException(409, 'Post is already suspended')
+        post.status = SUSPENDED
+        decision, message = 'suspended', 'Post suspended and hidden from the marketplace'
+    record_listing_action(post, decision, db, admin)
+    db.commit()
+    return {'message': message, 'post': review_payload(post, db)}
+
+
+@router.delete('/posts/{post_id}')
+def delete_listing(post_id: int, data: ListingAction, db: Session = Depends(get_db),
+                   admin: models.User = Depends(get_current_admin)):
+    post = locked_listing(post_id, data, db)
+    # Preserve the review/report trail; delete dependent offers and images together.
+    record_listing_action(post, 'deleted', db, admin)
+    db.flush()
+    folders = [Path('uploads/posts') / f'user_{post.user_id}' / f'post_{post_id}']
+    for offer in db.query(models.Offer).filter(models.Offer.post_id == post_id).all():
+        folders.append(Path('uploads/offers') / f'user_{offer.offering_user_id}' / f'offer_{offer.o_id}')
+        db.delete(offer)
+    db.query(models.ModerationDecision).filter_by(post_id=post_id).update({'post_id': None}, synchronize_session=False)
+    db.query(models.UserReport).filter_by(post_id=post_id).update({'post_id': None}, synchronize_session=False)
+    db.query(models.PostModeration).filter_by(post_id=post_id).delete(synchronize_session=False)
+    db.delete(post)
+    db.commit()
+    root = Path('uploads').resolve()
+    for folder in folders:
+        if folder.resolve().is_relative_to(root):
+            shutil.rmtree(folder, ignore_errors=True)
+    return {'message': 'Post deleted permanently'}
 
 
 @router.get('/reports')

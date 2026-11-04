@@ -1,5 +1,10 @@
 
 // ── Helpers ───────────────────────────────────────────────
+if (new URLSearchParams(location.search).get('reason') === 'session-ended') {
+  const notice = document.getElementById('sessionNotice');
+  notice.textContent = 'Your session has ended. If your account is suspended, an administrator must reactivate it before you can sign in.';
+  notice.hidden = false;
+}
 function showError(inputId, errorId, message) {
   document.getElementById(inputId).classList.add('is-error');
   document.getElementById(errorId).textContent = message;
